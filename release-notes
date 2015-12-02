@@ -1,3 +1,22 @@
+version 0.9.8
+=================
+
+New features
+------------
+ * The timestamp function can be enabled/disabled through the configuration file  
+
+Notes
+-----
+ * It has been introduced a JenaQuery class to model queries in Jena. It stores the query in Jena native format, and void to process the query string at each iteration. 
+
+Fixed bugs (from previous release)
+----------------------------------
+
+Known Issues
+------------
+
+
+
 version 0.9.7
 =================
 

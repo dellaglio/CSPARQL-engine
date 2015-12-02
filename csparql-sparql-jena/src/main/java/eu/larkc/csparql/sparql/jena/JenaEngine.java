@@ -4,6 +4,9 @@
  *  Marco Balduini (marco.balduini@polimi.it)
  *  Emanuele Della Valle (emanuele.dellavalle@polimi.it)
  *  Davide Barbieri
+ *  Soheila Dehghanzadeh
+ *  Shen Gao
+ *  Daniele Dell'Aglio
  *   
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.

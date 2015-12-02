@@ -52,7 +52,7 @@ public class JenaQuery implements SparqlQuery {
 	public JenaQuery(final String cmd) {
 		this.id = UUID.randomUUID().toString();
 		query = QueryFactory.create(cmd);
-		
+		optimizeQuery();		
 	}
 	
 	public void optimizeQuery(){
