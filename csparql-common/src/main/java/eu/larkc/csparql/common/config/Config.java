@@ -76,11 +76,16 @@ public class Config {
 			config = new BaseConfiguration();
 			config.addProperty("esper.externaltime.enabled", false);
 			config.addProperty("esper.externaltime.tick", 0);
+			config.addProperty("csparql.timestampfunction", false);
 		}
 	}
 
 	public boolean isEsperUsingExternalTimestamp() {
 		return config.getBoolean("esper.externaltime.enabled");
+	}
+	
+	public boolean isTimestampFunctionEnabled() {
+		return config.getBoolean("csparql.timestampfunction");
 	}
 
 	public long getTimeStampTick() {

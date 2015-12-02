@@ -23,8 +23,6 @@
  ******************************************************************************/
 package eu.larkc.csparql.sparql.jena.ext;
 
-import java.util.Map;
-
 import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.datatypes.TypeMapper;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
@@ -40,9 +38,8 @@ import com.hp.hpl.jena.sparql.function.FunctionBase3;
 
 
 public class timestamp extends FunctionBase3 {
-
+	
 	static int i = 0;
-	public static Map<Statement,Long> timestamps;
 
 	//	@Override
 	//	public NodeValue exec(NodeValue v) {
@@ -83,13 +80,14 @@ public class timestamp extends FunctionBase3 {
 
 		}
 
-		if (timestamps.containsKey(key)) {
-			NodeValue ts=NodeValue.makeInteger(timestamps.get(key));
-
-			return ts;
-		} else {
-			return NodeValue.makeBoolean(false);
-		}
+		return Timestamps.INSTANCE.get(key);
+//		if (timestamps.containsKey(key)) {
+//			NodeValue ts=NodeValue.makeInteger(timestamps.get(key));
+//
+//			return ts;
+//		} else {
+//			return NodeValue.makeBoolean(false);
+//		}
 	}
 
 }

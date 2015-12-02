@@ -43,7 +43,7 @@ public class Configuration {
    private final String reasonerName = "eu.larkc.csparql.core.engine.TransparentReasoner";
    private final String sparqlEngineName = "eu.larkc.csparql.sparql.jena.JenaEngine";
    private final String cepQueryName = "eu.larkc.csparql.cep.esper.EsperQuery";
-   private final String sparqlQueryName = "eu.larkc.csparql.sparql.sesame.SesameQuery";
+   private final String sparqlQueryName = "eu.larkc.csparql.sparql.jena.JenaQuery";
    private final String translatorName = "eu.larkc.csparql.core.new_parser.utility_files.CSparqlTranslator";
 
    public static Configuration getCurrentConfiguration() {
