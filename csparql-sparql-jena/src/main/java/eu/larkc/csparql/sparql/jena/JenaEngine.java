@@ -77,6 +77,7 @@ import eu.larkc.csparql.sparql.api.SparqlEngine;
 import eu.larkc.csparql.sparql.api.SparqlQuery;
 import eu.larkc.csparql.sparql.jena.common.JenaReasonerWrapper;
 import eu.larkc.csparql.sparql.jena.data_source.JenaDatasource;
+import eu.larkc.csparql.sparql.jena.ext.Timestamps;
 import eu.larkc.csparql.sparql.jena.ext.timestamp;
 
 public class JenaEngine implements SparqlEngine {
@@ -94,7 +95,7 @@ public class JenaEngine implements SparqlEngine {
 
 	Map<String, Model> graphs = new HashMap<String, Model>();
 
-	Map<Statement,Long> timestamps = new HashMap<Statement,Long>();
+//	Map<Statement,Long> timestamps = new HashMap<Statement,Long>();
 
 	private boolean performTimestampFunction = false;
 
@@ -111,7 +112,8 @@ public class JenaEngine implements SparqlEngine {
 	public JenaEngine() {
 		super();
 		FunctionRegistry.get().put("http://larkc.eu/csparql/sparql/jena/ext#timestamp", timestamp.class) ;
-		timestamp.timestamps = timestamps;
+		Timestamps.INSTANCE.init();
+//		timestamp.timestamps = timestamps;
 	}
 
 
@@ -139,7 +141,8 @@ public class JenaEngine implements SparqlEngine {
 
 		if(performTimestampFunction){
 			if(timestamp != 0){
-				timestamps.put(s, new Long(timestamp));
+				Timestamps.INSTANCE.put(s, new Long(timestamp));
+//				timestamps.put(s, new Long(timestamp));
 			}
 		}
 		this.model.add(s);
@@ -148,13 +151,15 @@ public class JenaEngine implements SparqlEngine {
 	public void clean() {
 		// TODO implement SparqlEngine.clean
 		this.model.remove(this.model);
-		timestamps.clear();
+		Timestamps.INSTANCE.clear();
+//		timestamps.clear();
 	}
 
 
 	public void destroy() {
 		this.model.close();
-		timestamps.clear();
+		Timestamps.INSTANCE.clear();
+//		timestamps.clear();
 	}
 
 
