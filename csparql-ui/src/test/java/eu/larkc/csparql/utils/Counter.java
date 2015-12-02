@@ -21,7 +21,8 @@ public class Counter extends ResultFormatter {
 
 	@Override
 	public void update(Observable o, Object arg) {
-		RDFTuple t = ((RDFTable)arg).getTuples().iterator().next();
+		RDFTuple t = ((RDFTable)arg).getTuples().iterator().next();//soheila: why only first element? shouldn't it be counts.add(((RDFTable)arg).size())??
+		//System.out.println(((RDFTable)arg).size());
 		counts.add(Integer.parseInt(t.get(0).split("\"")[1]));
 	}
 }

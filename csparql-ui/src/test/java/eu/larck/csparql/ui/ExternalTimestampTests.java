@@ -161,7 +161,6 @@ public class ExternalTimestampTests {
 		streamGenerator.run();
 
 		List<Integer> actual = formatter.getResults();
-		//		System.out.println(actual);
 		assertEquals(expected, actual);
 
 		//		System.out.println(formatter.getResults());
