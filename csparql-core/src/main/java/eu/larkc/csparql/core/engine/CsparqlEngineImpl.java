@@ -50,6 +50,7 @@ import eu.larkc.csparql.cep.api.RdfSnapshot;
 import eu.larkc.csparql.cep.api.RdfStream;
 import eu.larkc.csparql.cep.esper.EsperEngine;
 import eu.larkc.csparql.common.RDFTable;
+import eu.larkc.csparql.common.config.Config;
 import eu.larkc.csparql.common.exceptions.ReasonerException;
 import eu.larkc.csparql.common.utils.ReasonerChainingType;
 import eu.larkc.csparql.core.Configuration;
@@ -89,7 +90,7 @@ public class CsparqlEngineImpl implements Observer, CsparqlEngine {
 		this.reasoner = this.configuration.createReasoner();
 		this.cepEngine.initialize();
 		this.sparqlEngine.initialize();
-		this.setPerformTimestampFunctionVariable(false);
+		this.setPerformTimestampFunctionVariable(Config.INSTANCE.isTimestampFunctionEnabled());
 		this.setUpInjecter(0);
 
 	}
@@ -105,7 +106,7 @@ public class CsparqlEngineImpl implements Observer, CsparqlEngine {
 		this.reasoner = this.configuration.createReasoner();
 		this.cepEngine.initialize();
 		this.sparqlEngine.initialize();
-		this.setPerformTimestampFunctionVariable(false);
+		this.setPerformTimestampFunctionVariable(Config.INSTANCE.isTimestampFunctionEnabled());
 		this.setUpInjecter(queueDimension);
 	}
 
