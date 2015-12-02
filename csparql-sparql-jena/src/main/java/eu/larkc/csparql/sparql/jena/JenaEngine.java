@@ -166,9 +166,13 @@ public class JenaEngine implements SparqlEngine {
 	public RDFTable evaluateQuery(final SparqlQuery query) {
 
 		long startTS = System.currentTimeMillis();
-
-		final Query q = QueryFactory.create(query.getQueryCommand(), Syntax.syntaxSPARQL_11);
-
+		
+		final Query q; 
+		if(query instanceof JenaQuery)
+			q = ((JenaQuery)query).getQuery();
+		else
+			q = QueryFactory.create(query.getQueryCommand(), Syntax.syntaxSPARQL_11);
+		
 		for(String s: q.getGraphURIs()){
 			List<RDFTuple> list = jds.getNamedModel(s);
 			for(RDFTuple t : list)
