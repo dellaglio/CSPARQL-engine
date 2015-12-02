@@ -83,7 +83,9 @@ public class Config {
 	public boolean isEsperUsingExternalTimestamp() {
 		return config.getBoolean("esper.externaltime.enabled");
 	}
-	
+	public boolean isJenaUsingCachingForService() {
+		return config.getBoolean("jena.service.cache");
+	}
 	public boolean isTimestampFunctionEnabled() {
 		return config.getBoolean("csparql.timestampfunction");
 	}

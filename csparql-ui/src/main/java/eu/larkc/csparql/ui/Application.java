@@ -26,7 +26,17 @@
  ******************************************************************************/
 package eu.larkc.csparql.ui;
 
+import java.io.FileInputStream;
 import java.text.ParseException;
+
+import com.hp.hpl.jena.query.DatasetAccessor;
+import com.hp.hpl.jena.query.DatasetAccessorFactory;
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.update.UpdateExecutionFactory;
+import com.hp.hpl.jena.update.UpdateFactory;
+import com.hp.hpl.jena.update.UpdateProcessor;
+import com.hp.hpl.jena.update.UpdateRequest;
 
 import eu.larkc.csparql.cep.api.RDFStreamAggregationTestGenerator;
 import eu.larkc.csparql.cep.api.RdfStream;
@@ -40,11 +50,34 @@ public final class Application {
    /**
     * @param args
     */
+	public static void restartFuseki() {
+		try {
+				String UQ = "DELETE    { ?a ?b ?c } where{?a ?b ?c}; ";
+				UpdateRequest query = UpdateFactory.create(UQ);
+				UpdateProcessor qexec = UpdateExecutionFactory.createRemoteForm(query, "http://localhost:3030/test/update");
+				qexec.execute();
+				String serviceURI = "http://localhost:3030/test/data";
+				DatasetAccessor accessor;
+				accessor = DatasetAccessorFactory.createHTTP(serviceURI);
+				Model model = ModelFactory.createDefaultModel();
+				model.read(new FileInputStream("/home/soheila/git/githubCSPARQL/CSPARQL-engine/testRDF_L.ttl"), null,
+						"TTL");
 
+				accessor.putModel(model);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
    public static void main(final String[] args) {
 
+	   restartFuseki();
 	   //final String queryGetAll = "REGISTER QUERY PIPPO AS SELECT ?S ?P ?O FROM STREAM <http://www.glue.com/stream> [RANGE 5s STEP 1s] WHERE { ?S ?P ?O }";
 	   final String queryGetAll = "REGISTER QUERY PIPPO AS SELECT ?S ?P ?O FROM STREAM <http://myexample.org/stream> [RANGE TRIPLES 10] WHERE { ?S ?P ?O }";
+
+	   final String querySERVICE = "REGISTER QUERY PIPPO AS SELECT ?S ?P ?O FROM STREAM <http://myexample.org/stream> [RANGE TRIPLES 10] WHERE { ?S ?P ?O "
+	   		+"SERVICE <http://localhost:3030/test/sparql> {?S ?P2 ?O2}"
+			+ "}";
 
 	   final String queryGetEverythingFromBothStream = "REGISTER QUERY PIPPO AS SELECT ?S ?P ?O FROM STREAM <http://www.glue.com/stream> [RANGE TRIPLES 1] FROM STREAM <http://myexample.org/stream> [RANGE TRIPLES 1] WHERE { ?S ?P ?O }";
 	   
@@ -94,7 +127,7 @@ public final class Application {
       final CsparqlQueryResultProxy c2 = null;
 
       try {
-         c1 = engine.registerQuery(queryGetAll, false);
+         c1 = engine.registerQuery(querySERVICE, false);
       } catch (final ParseException ex) {
          System.out.println("errore di parsing: " + ex.getMessage());
       }
@@ -103,6 +136,9 @@ public final class Application {
       }
    }
 
+   
+   
+   
    private Application() {
       // hidden constructor
    }

@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.datatypes.TypeMapper;
+import com.hp.hpl.jena.query.ARQ;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
@@ -67,11 +68,13 @@ import com.hp.hpl.jena.reasoner.Reasoner;
 import com.hp.hpl.jena.reasoner.rulesys.GenericRuleReasoner;
 import com.hp.hpl.jena.reasoner.rulesys.RDFSRuleReasonerFactory;
 import com.hp.hpl.jena.reasoner.rulesys.Rule;
+import com.hp.hpl.jena.sparql.engine.main.QC;
 import com.hp.hpl.jena.sparql.function.FunctionRegistry;
 import com.hp.hpl.jena.vocabulary.ReasonerVocabulary;
 
 import eu.larkc.csparql.common.RDFTable;
 import eu.larkc.csparql.common.RDFTuple;
+import eu.larkc.csparql.common.config.Config;
 import eu.larkc.csparql.common.data_source.Datasource;
 import eu.larkc.csparql.common.exceptions.ReasonerException;
 import eu.larkc.csparql.common.hardware_resource.Memory;
@@ -82,6 +85,7 @@ import eu.larkc.csparql.sparql.jena.common.JenaReasonerWrapper;
 import eu.larkc.csparql.sparql.jena.data_source.JenaDatasource;
 import eu.larkc.csparql.sparql.jena.ext.Timestamps;
 import eu.larkc.csparql.sparql.jena.ext.timestamp;
+import eu.larkc.csparql.sparql.jena.service.OpExecutorFactoryAcqua;
 
 public class JenaEngine implements SparqlEngine {
 
@@ -116,6 +120,8 @@ public class JenaEngine implements SparqlEngine {
 		super();
 		FunctionRegistry.get().put("http://larkc.eu/csparql/sparql/jena/ext#timestamp", timestamp.class) ;
 		Timestamps.INSTANCE.init();
+		
+		if(Config.INSTANCE.isJenaUsingCachingForService()) QC.setFactory(ARQ.getContext(), new OpExecutorFactoryAcqua());
 //		timestamp.timestamps = timestamps;
 	}
 
