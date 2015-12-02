@@ -191,7 +191,6 @@ public class CacheTests {
 				e.printStackTrace();
 			}
 			c1.addObserver(new ResultFormatter() {
-
 				@Override
 				public void update(Observable o, Object arg) {
 					for(Iterator<RDFTuple> it = ((RDFTable)arg).getTuples().iterator();it.hasNext();){
@@ -202,7 +201,6 @@ public class CacheTests {
 				}
 			});
 			streamGenerator.run();
-
 		}
 	
 }
