@@ -41,6 +41,7 @@ import com.hp.hpl.jena.update.UpdateRequest;
 import eu.larkc.csparql.cep.api.RDFStreamAggregationTestGenerator;
 import eu.larkc.csparql.cep.api.RdfStream;
 import eu.larkc.csparql.cep.api.TestGenerator;
+import eu.larkc.csparql.core.engine.ConsoleFormatter;
 import eu.larkc.csparql.core.engine.CsparqlEngine;
 import eu.larkc.csparql.core.engine.CsparqlEngineImpl;
 import eu.larkc.csparql.core.engine.CsparqlQueryResultProxy;
@@ -75,7 +76,7 @@ public final class Application {
 	   //final String queryGetAll = "REGISTER QUERY PIPPO AS SELECT ?S ?P ?O FROM STREAM <http://www.glue.com/stream> [RANGE 5s STEP 1s] WHERE { ?S ?P ?O }";
 	   final String queryGetAll = "REGISTER QUERY PIPPO AS SELECT ?S ?P ?O FROM STREAM <http://myexample.org/stream> [RANGE TRIPLES 10] WHERE { ?S ?P ?O }";
 
-	   final String querySERVICE = "REGISTER QUERY PIPPO AS SELECT ?S ?P ?O FROM STREAM <http://myexample.org/stream> [RANGE TRIPLES 10] WHERE { ?S ?P ?O "
+	   final String querySERVICE = "REGISTER QUERY PIPPO AS SELECT ?S ?P2 ?O2 FROM STREAM <http://myexample.org/stream> [RANGE TRIPLES 10] WHERE { ?S ?P ?O "
 	   		+"SERVICE <http://localhost:3030/test/sparql> {?S ?P2 ?O2}"
 			+ "}";
 
@@ -132,7 +133,7 @@ public final class Application {
          System.out.println("errore di parsing: " + ex.getMessage());
       }
       if (c1 != null) {
-         c1.addObserver(new TextualFormatter());
+         c1.addObserver(new ConsoleFormatter());
       }
    }
 
