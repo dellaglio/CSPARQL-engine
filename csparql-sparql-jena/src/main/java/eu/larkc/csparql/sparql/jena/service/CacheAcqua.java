@@ -13,21 +13,29 @@ import com.hp.hpl.jena.sparql.engine.binding.Binding;
 import com.hp.hpl.jena.sparql.engine.binding.BindingFactory;
 import com.hp.hpl.jena.sparql.engine.binding.BindingMap;
 
+
 //possible K: Binding, long
 //possible V: Binding, Set<Binding>, List<Binding>, ???
 
 public class CacheAcqua extends CacheLRU<Binding,Binding> {
 
+	public static final CacheAcqua INSTANCE = new CacheAcqua();
+
 	private List<Var> keys; 
 	private List<Var> values;
 	
-	public CacheAcqua(float loadFactor, int maxSize, List<Var> keyVars, List<Var> valueVars) {
-		super(loadFactor, maxSize);
+	public CacheAcqua(){
+		super(0.8f, 1000);
+		
+	}
+	
+	public void init( List<Var> keyVars, List<Var> valueVars) {
 		keys=keyVars;
 		values=valueVars;
 		
 		// TODO Auto-generated constructor stub
 	}
+	
 	
 	public List<Var> getKeyVars(){
 		return keys;

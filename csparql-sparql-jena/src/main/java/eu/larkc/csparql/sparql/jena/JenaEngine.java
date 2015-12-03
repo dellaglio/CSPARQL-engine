@@ -32,6 +32,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,7 +86,9 @@ import eu.larkc.csparql.sparql.jena.common.JenaReasonerWrapper;
 import eu.larkc.csparql.sparql.jena.data_source.JenaDatasource;
 import eu.larkc.csparql.sparql.jena.ext.Timestamps;
 import eu.larkc.csparql.sparql.jena.ext.timestamp;
+import eu.larkc.csparql.sparql.jena.service.CacheAcqua;
 import eu.larkc.csparql.sparql.jena.service.OpExecutorFactoryAcqua;
+import eu.larkc.csparql.sparql.jena.service.QueryRunner;
 
 public class JenaEngine implements SparqlEngine {
 
@@ -189,7 +192,7 @@ public class JenaEngine implements SparqlEngine {
 		}
 
 		QueryExecution qexec;
-
+		
 		if(reasonerMap.containsKey(query.getId())){
 			if(reasonerMap.get(query.getId()).isActive()){
 				Reasoner reasoner = (Reasoner) reasonerMap.get(query.getId()).getReasoner();
@@ -557,6 +560,8 @@ public class JenaEngine implements SparqlEngine {
 	@Override
 	public void parseSparqlQuery(SparqlQuery query) throws ParseException {
 		Query spQuery = QueryFactory.create(query.getQueryCommand(), Syntax.syntaxSPARQL_11);
+		QueryRunner qr=new QueryRunner(query.toString(), this.model);
+		CacheAcqua.INSTANCE.init(qr.computeCacheKeyVars(),qr.computeCacheValueVars());
 		for(String s: spQuery.getGraphURIs()){
 			if(!jds.containsNamedModel(s))
 				throw new ParseException("The model in the FROM clause is missing in the internal dataset, please put the static model in the dataset using putStaticNamedModel(String iri, String location) method of the engine.", 0);
