@@ -34,11 +34,12 @@ public class QueryRunner {
 	private Query query;
 	private Op parsedQuery;
 	private Op optimizedQuery;
-
+	private List<String> serviceList;
+	private int serviceCount;
 	public QueryRunner(String queryString, Model localData){
 		query = QueryFactory.create(queryString);
 		model = localData;
-
+		serviceCount= countServiceClauses();//serviceLsit is initialized and filled in this function
 		parsedQuery = Algebra.compile(query);
 		System.out.println("Query (compiled):");
 		parsedQuery.output(IndentedWriter.stdout);
@@ -219,12 +220,13 @@ public class QueryRunner {
 	}
 
 	public int countServiceClauses() {
-		
+		serviceList=new ArrayList<>();
 		final List<OpService> os = new ArrayList<OpService>();
 		//removes the SERVICES clauses from original query and put it in os
 		Transformer.transform(new TransformCopy(){
 			public Op transform(OpService opService, Op subOp){
 				os.add(opService);
+				serviceList.add(opService.getService().toString());
 				return OpNull.create();
 			}
 		}, parsedQuery);
@@ -297,5 +299,10 @@ public class QueryRunner {
 			System.out.println(b.get(Var.alloc("movie")));
 		}		
 
+	}
+
+	public List<String> getSERVICEEndpointURI() {
+		// TODO Auto-generated method stub
+		return serviceList;
 	}
 }

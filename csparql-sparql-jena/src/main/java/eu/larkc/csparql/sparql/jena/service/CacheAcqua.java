@@ -59,13 +59,13 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 				
 		but it should be actually filled from 
 		remote data provider according to query*/ 	 
-		fillCache(qr.getQuery());
+		fillCache(qr.getQuery(),qr.getSERVICEEndpointURI());
 		
 	}
 	
-	private void fillCache(Query query) {
+	private void fillCache(Query query,List<String> endpoints) {
 		QueryExecution qe = QueryExecutionFactory.sparqlService(
-				"http://localhost:3030/test/sparql", query);
+				endpoints.get(0), query);//TODO: for the moment we assume that there is only one service cluase in the query
 		ResultSet as = qe.execSelect();
 		for (; as.hasNext();) {
 			QuerySolution qs = as.nextSolution();
@@ -74,8 +74,7 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 					.asBinding(qs);
 			
 			put(solb);
-		}
-		
+		}		
 	}
 	
 	public List<Var> getKeyVars(){
