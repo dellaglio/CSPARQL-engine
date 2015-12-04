@@ -86,6 +86,11 @@ public class Config {
 	public boolean isJenaUsingCachingForService() {
 		return config.getBoolean("jena.service.cache");
 	}
+	
+	public String getJenaCachingTypeForService() {
+		return config.getString("jena.service.cacheType");
+	}
+	
 	public boolean isTimestampFunctionEnabled() {
 		return config.getBoolean("csparql.timestampfunction");
 	}

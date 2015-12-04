@@ -12,6 +12,8 @@ import com.hp.hpl.jena.sparql.engine.iterator.QueryIterPlainWrapper;
 import com.hp.hpl.jena.sparql.engine.main.OpExecutor;
 import com.hp.hpl.jena.sparql.engine.main.iterator.QueryIterService;
 
+import eu.larkc.csparql.common.config.Config;
+
 
 
 public class OpExecutorAcqua extends OpExecutor {
@@ -35,6 +37,7 @@ public class OpExecutorAcqua extends OpExecutor {
 			outerContent.add(b);
 		}
 		QueryIterator outerContentIterator =  new QueryIterPlainWrapper(outerContent.iterator());
+<<<<<<< HEAD
 		*/
 		//if (QueryExecUtils.moe.equalsIgnoreCase("csparql"))
     		//return new QueryIterService(input, opService, execCxt) ;
@@ -61,15 +64,67 @@ public class OpExecutorAcqua extends OpExecutor {
     		return new QueryIterServiceLWLRU(input, opService, execCxt) ; 
     	}if (QueryExecUtils.moe.equalsIgnoreCase("BST")) {
     		//if(QueryExecUtils.updateBudget>QueryExecUtils.windowlength) return null;
+=======
+		// we should automatically identify if it is a SBM policy or 1-1 mapping
+		switch(Config.INSTANCE.getJenaCachingTypeForService()){
+		case "csparql":
+			return new QueryIterService(outerContentIterator, opService, execCxt) ;
+		case "WBM":
+			return new QueryIterServiceWBM(input, opService, execCxt) ;
+			/*case "cache":
+			return new QueryIterServiceCache(input, opService, execCxt) ; 
+		case "rand":
+			return new QueryIterServiceRand(input, opService, execCxt) ; 
+		case "global":
+			return new QueryIterServiceGlobal(input, opService, execCxt) ; 
+		case"LRU":
+			return new QueryIterServiceLRU(input, opService, execCxt) ; 
+		case "LWLRU":
+			return new QueryIterServiceLWLRU(input, opService, execCxt) ; 
+		case "BST":
+>>>>>>> 0fa8f7f3a00423e23ebef41474a86c607923819d
     		return new QueryIterServiceBST(input, opService, execCxt) ; 
-    	}if (QueryExecUtils.moe.equalsIgnoreCase("WST")) {
-    		//if(QueryExecUtils.updateBudget>QueryExecUtils.windowlength) return null;
-    		return new QueryIterServiceWST(input, execCxt) ; 
-    	}
-    	else return null;
-		
-		return super.execute(opService, input);*/
-	}
-	
-	
+		case "WST":
+			return new QueryIterServiceWST(input, execCxt) ; 
+		case "SBMCsparql":{
+			QueryIterServiceSBM tempSBM = new QueryIterServiceSBM(input, opService, execCxt);
+			tempSBM.mypolicy = new SBMCsparql();
+			tempSBM.executePlicy();}
+		case "SBMBGP":{
+			QueryIterServiceSBM tempSBM = new QueryIterServiceSBM(input, opService, execCxt);
+
+		}
+				if (QueryExecUtils.moe.contains("Flexible") && QueryExecUtils.moe.contains("BGP") && QueryExecUtils.moe.contains("IBM")) {
+					tempSBM.mypolicy = new SBMIBMBGPFlexible();
+					tempSBM.executePlicy();
+				} else if (QueryExecUtils.moe.contains("BGP") && !QueryExecUtils.moe.contains("IBM")) {
+					tempSBM.mypolicy = new SBMBGP();
+					tempSBM.executePlicy();
+				} else if (QueryExecUtils.moe.contains("Agg")&& !QueryExecUtils.moe.contains("IBM")) {
+					tempSBM.mypolicy = new SBMAgg();
+					tempSBM.executePlicy();
+				} else if (QueryExecUtils.moe.contains("Random")) {
+					tempSBM.mypolicy = new SBMRandom();
+					tempSBM.executePlicy();
+				} else if (QueryExecUtils.moe.contains("LRU")) {
+					tempSBM.mypolicy = new SBMLRU();
+					tempSBM.executePlicy();
+				}else if (QueryExecUtils.moe.contains("Csparql")) {
+
+				}else if (QueryExecUtils.moe.contains("BGP") && QueryExecUtils.moe.contains("IBM")) {
+					tempSBM.mypolicy = new SBMIBMBGP();
+					tempSBM.executePlicy();
+				}
+				else if (QueryExecUtils.moe.contains("Agg") && QueryExecUtils.moe.contains("IBM")) {
+					tempSBM.mypolicy = new SBMIBMAgg();
+					tempSBM.executePlicy();
+				} 
+
+				return tempSBM;
+
+		default : 
+			return super.execute(opService, input);
+		}*/}
 }
+
+

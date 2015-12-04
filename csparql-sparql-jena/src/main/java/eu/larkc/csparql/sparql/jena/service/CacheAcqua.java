@@ -1,5 +1,6 @@
 package eu.larkc.csparql.sparql.jena.service;
 
+import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -10,11 +11,15 @@ import org.apache.jena.atlas.lib.cache.CacheLRU;
 import org.apache.jena.atlas.lib.cache.CacheSetLRU;
 
 import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.query.DatasetAccessor;
+import com.hp.hpl.jena.query.DatasetAccessorFactory;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.engine.binding.Binding;
 import com.hp.hpl.jena.sparql.engine.binding.BindingFactory;
@@ -22,6 +27,11 @@ import com.hp.hpl.jena.sparql.engine.binding.BindingHashMap;
 import com.hp.hpl.jena.sparql.engine.binding.BindingMap;
 import com.hp.hpl.jena.sparql.engine.binding.BindingProjectNamed;
 import com.hp.hpl.jena.sparql.engine.binding.BindingUtils;
+import com.hp.hpl.jena.update.UpdateExecutionFactory;
+import com.hp.hpl.jena.update.UpdateFactory;
+import com.hp.hpl.jena.update.UpdateProcessor;
+import com.hp.hpl.jena.update.UpdateRequest;
+
 
 //possible K: Binding, long
 //possible V: Binding, Set<Binding>, List<Binding>, ???
@@ -30,6 +40,7 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 
 	public static final CacheAcqua INSTANCE = new CacheAcqua();
 
+	
 	private List<Var> keys; 
 	private List<Var> values;
 	public CacheAcqua(){
@@ -39,7 +50,8 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 	public void init( QueryRunner qr) {
 		keys=qr.computeCacheKeyVars();
 		values=qr.computeCacheValueVars();
-		/*here I artifically fill the cache according to this query and keyvars=?S and value vars ?P2,?O2
+		/*TODO
+		 * here I temporarily fill the cache according to this query and keyvars=?S and value vars ?P2,?O2
 		 *  
 		final String querySERVICE = "REGISTER QUERY PIPPO AS SELECT ?S ?P2 ?O2 FROM STREAM <http://myexample.org/stream> [RANGE TRIPLES 10] WHERE { ?S ?P ?O "
 		   		+"SERVICE <http://localhost:3030/test/sparql> {?S ?P2 ?O2}"
@@ -58,18 +70,14 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 		for (; as.hasNext();) {
 			QuerySolution qs = as.nextSolution();
 
-			// logger.debug("query solution {} ",qs);
 			BindingProjectNamed solb = (BindingProjectNamed) BindingUtils
 					.asBinding(qs);
 			
 			put(solb);
-			//System.out.println("----->" + tempKeyBinding);
-			// logger.debug("caching key {} >> added{} ",tempKeyBinding,
-			// solb);//Iterator<String> strs = soln.varNames();
 		}
 		
 	}
-
+	
 	public List<Var> getKeyVars(){
 		return keys;
 	}

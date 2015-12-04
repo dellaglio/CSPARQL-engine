@@ -48,6 +48,7 @@ public class QueryRunner {
 		optimizedQuery.output(IndentedWriter.stdout);
 
 	}
+
 	public Query getQuery(){
 		return query;
 	}
@@ -120,7 +121,8 @@ public class QueryRunner {
 		serviceVars.removeAll(intersection);
 		List<Var> returnList=new ArrayList<>();
 		returnList.addAll(serviceVars);
-		return returnList;			
+
+		return returnList;
 	}
 
 	private Set<Var> computeVars(Op operator){
@@ -296,5 +298,4 @@ public class QueryRunner {
 		}		
 
 	}
-
 }

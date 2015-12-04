@@ -32,6 +32,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -191,7 +192,7 @@ public class JenaEngine implements SparqlEngine {
 		}
 
 		QueryExecution qexec;
-
+		
 		if(reasonerMap.containsKey(query.getId())){
 			if(reasonerMap.get(query.getId()).isActive()){
 				Reasoner reasoner = (Reasoner) reasonerMap.get(query.getId()).getReasoner();

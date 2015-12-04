@@ -304,7 +304,7 @@ public class CsparqlEngineImpl implements Observer, CsparqlEngine {
 
 		logger.debug("CEP query: {}", query.getCepQuery().getQueryCommand());
 		logger.debug("SPARQL query: {}", query.getSparqlQuery().getQueryCommand().replace("\n", "").replace("\r", ""));
-
+		
 		// Parse sparql(static) query
 		sparqlEngine.parseSparqlQuery(query.getSparqlQuery());
 
