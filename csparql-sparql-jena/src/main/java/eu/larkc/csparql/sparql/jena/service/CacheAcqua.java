@@ -1,7 +1,5 @@
 package eu.larkc.csparql.sparql.jena.service;
 
-import java.io.FileInputStream;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -30,12 +28,12 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 
 	public static final CacheAcqua INSTANCE = new CacheAcqua();
 
-	
+
 	private List<Var> keys; 
 	private List<Var> values;
 	public CacheAcqua(){
 		super(0.8f, 1000);
-		
+
 	}
 	
 	public void init(QueryRunner qr) {
@@ -47,27 +45,29 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 		final String querySERVICE = "REGISTER QUERY PIPPO AS SELECT ?S ?P2 ?O2 FROM STREAM <http://myexample.org/stream> [RANGE TRIPLES 10] WHERE { ?S ?P ?O "
 		   		+"SERVICE <http://localhost:3030/test/sparql> {?S ?P2 ?O2}"
 				+ "}";
-				
+
 		but it should be actually filled from 
 		remote data provider according to query*/ 	 
 		fillCache(qr.getQuery(),qr.getSERVICEEndpointURI());
-		
-	}
-	
-	private void fillCache(Query query,List<String> endpoints) {
-		QueryExecution qe = QueryExecutionFactory.sparqlService(
-				endpoints.get(0), query);//TODO: for the moment we assume that there is only one service clause in the query
-		ResultSet as = qe.execSelect();
-		for (; as.hasNext();) {
-			QuerySolution qs = as.nextSolution();
 
-			BindingProjectNamed solb = (BindingProjectNamed) BindingUtils
-					.asBinding(qs);
-			
-			put(solb);
-		}		
 	}
-	
+
+	private void fillCache(Query query,List<String> endpoints) {
+		for(int i=0;i<endpoints.size();i++){
+			QueryExecution qe = QueryExecutionFactory.sparqlService(
+					endpoints.get(0), query);//TODO: for the moment we assume that there is only one service clause in the query
+			ResultSet as = qe.execSelect();
+			for (; as.hasNext();) {
+				QuerySolution qs = as.nextSolution();
+
+				BindingProjectNamed solb = (BindingProjectNamed) BindingUtils
+						.asBinding(qs);
+
+				put(solb);
+			}		
+		}	
+	}
+
 	public List<Var> getKeyVars(){
 		return keys;
 	}
@@ -75,12 +75,12 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 	public List<Var> getValueVars(){
 		return values;
 	}
-	
+
 	public boolean contains(Binding key){
 		if (super.containsKey(key)) return true;
 		else return false;
 	}
-	
+
 	public Binding getKeyBinding(Binding b){
 		Iterator<Var> keyIt = keys.iterator();
 		BindingMap keyBm = BindingFactory.create();
@@ -101,7 +101,7 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 		}
 		return valueBm;
 	}
-	
+
 	public Set<Binding> get(Binding key){
 		return super.get(key);
 	}
@@ -113,17 +113,17 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 	public Set<Binding> put(Binding b){
 		Binding keyBm = getKeyBinding(b);
 		Binding valueBm = getValueBinding(b);
-		
+
 		Set<Binding> prevBinding=super.get(keyBm);
 		if(prevBinding!=null){
 			prevBinding.add(valueBm);
-		return super.put(keyBm, prevBinding);
+			return super.put(keyBm, prevBinding);
 		}else{
 			HashSet<Binding> bhs=new HashSet<>();
 			bhs.add(valueBm);
 			return super.put(keyBm, bhs);
 		}
-		
+
 	}
 
 }

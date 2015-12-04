@@ -28,7 +28,7 @@ public class CacheAcquaTest {
 				Var.alloc("v3")
 				);
 		
-		CacheAcqua cache = new CacheAcqua(0.8f, 10, keyVars, valueVars);
+		CacheAcqua cache = new CacheAcqua();
 		assertEquals(keyVars, cache.getKeyVars());
 		assertEquals(valueVars, cache.getValueVars());
 	}
@@ -44,7 +44,7 @@ public class CacheAcquaTest {
 				Var.alloc("v3")
 				);
 		
-		CacheAcqua cache = new CacheAcqua(0.8f, 10, keyVars, valueVars);
+		CacheAcqua cache = new CacheAcqua();
 		//defining a binding 
 		BindingMap bm = BindingFactory.create();
 		bm.add(Var.alloc("k1"), NodeFactory.createLiteral("a"));
@@ -72,7 +72,7 @@ public class CacheAcquaTest {
 				Var.alloc("v3")
 				);
 		
-		CacheAcqua cache = new CacheAcqua(0.8f, 10, keyVars, valueVars);
+		CacheAcqua cache = new CacheAcqua();
 		//defining a binding 
 		BindingMap bm = BindingFactory.create();
 		bm.add(Var.alloc("k1"), NodeFactory.createLiteral("a"));
@@ -112,8 +112,8 @@ public class CacheAcquaTest {
 				Var.alloc("v3")
 				);
 		
-		CacheAcqua cache = new CacheAcqua(0.8f, 10, keyVars, valueVars);
-		
+		CacheAcqua cache = new CacheAcqua();
+		cache.init(new QueryRunner(null, null));
 		assertEquals(false, cache.contains(bmKey));
 		cache.put(bm);
 		assertEquals(true, cache.contains(bmKey));
