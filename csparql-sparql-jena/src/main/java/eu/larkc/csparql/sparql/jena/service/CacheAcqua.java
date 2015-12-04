@@ -8,29 +8,19 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.jena.atlas.lib.cache.CacheLRU;
-import org.apache.jena.atlas.lib.cache.CacheSetLRU;
 
 import com.hp.hpl.jena.graph.Node;
-import com.hp.hpl.jena.query.DatasetAccessor;
-import com.hp.hpl.jena.query.DatasetAccessorFactory;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.engine.binding.Binding;
 import com.hp.hpl.jena.sparql.engine.binding.BindingFactory;
-import com.hp.hpl.jena.sparql.engine.binding.BindingHashMap;
 import com.hp.hpl.jena.sparql.engine.binding.BindingMap;
 import com.hp.hpl.jena.sparql.engine.binding.BindingProjectNamed;
 import com.hp.hpl.jena.sparql.engine.binding.BindingUtils;
-import com.hp.hpl.jena.update.UpdateExecutionFactory;
-import com.hp.hpl.jena.update.UpdateFactory;
-import com.hp.hpl.jena.update.UpdateProcessor;
-import com.hp.hpl.jena.update.UpdateRequest;
 
 
 //possible K: Binding, long
@@ -47,7 +37,8 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 		super(0.8f, 1000);
 		
 	}
-	public void init( QueryRunner qr) {
+	
+	public void init(QueryRunner qr) {
 		keys=qr.computeCacheKeyVars();
 		values=qr.computeCacheValueVars();
 		/*TODO
@@ -114,9 +105,11 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 	public Set<Binding> get(Binding key){
 		return super.get(key);
 	}
+	
 	public Set<Binding> put(Binding key, Set<Binding> value){
 		return super.put(key, value);
 	}
+	
 	public Set<Binding> put(Binding b){
 		Binding keyBm = getKeyBinding(b);
 		Binding valueBm = getValueBinding(b);

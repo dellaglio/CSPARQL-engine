@@ -13,14 +13,12 @@ import com.hp.hpl.jena.sparql.engine.iterator.QueryIterRepeatApply;
 public class QueryIterServiceCache  extends QueryIterRepeatApply{
 	CacheAcqua jenaCache;
 	OpService opService ;
+	
 	public QueryIterServiceCache(QueryIterator input, OpService opService, ExecutionContext context)
 	{
 		super(input, context) ;
-		long start=System.currentTimeMillis();
 		jenaCache = CacheAcqua.INSTANCE;
-		/*if ( context.getContext().isFalse(Service.serviceAllowed) )
-			throw new QueryExecException("SERVICE not allowed") ; 
-		*/this.opService = opService ;		
+		this.opService = opService ;		
 
 	}
 

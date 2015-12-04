@@ -124,8 +124,8 @@ public class JenaEngine implements SparqlEngine {
 		FunctionRegistry.get().put("http://larkc.eu/csparql/sparql/jena/ext#timestamp", timestamp.class) ;
 		Timestamps.INSTANCE.init();
 		
-		if(Config.INSTANCE.isJenaUsingCachingForService()) QC.setFactory(ARQ.getContext(), new OpExecutorFactoryAcqua());
-//		timestamp.timestamps = timestamps;
+		if(Config.INSTANCE.isJenaUsingServiceCaching()) 
+			QC.setFactory(ARQ.getContext(), new OpExecutorFactoryAcqua());
 	}
 
 
