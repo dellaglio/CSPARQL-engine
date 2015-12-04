@@ -40,6 +40,18 @@
 			<artifactId>junit</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.jena</groupId>
+			<artifactId>jena-fuseki</artifactId>
+			<version>1.0.1</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.apache.jena</groupId>
+					<artifactId>jena-arq</artifactId>
+				</exclusion>
+			</exclusions>
+			<scope>test</scope>
+		</dependency>
 
 	</dependencies>
 

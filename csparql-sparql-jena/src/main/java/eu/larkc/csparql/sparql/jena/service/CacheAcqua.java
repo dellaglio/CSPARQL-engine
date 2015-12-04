@@ -31,6 +31,13 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 
 	private List<Var> keys; 
 	private List<Var> values;
+	
+	public CacheAcqua(float loadFactor, int maxSize, List<Var> keys, List<Var> values){
+		super(loadFactor, maxSize);
+		this.keys = keys;
+		this.values = values;
+	}
+	
 	public CacheAcqua(){
 		super(0.8f, 1000);
 

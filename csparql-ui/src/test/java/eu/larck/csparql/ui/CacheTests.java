@@ -2,49 +2,79 @@ package eu.larck.csparql.ui;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.FileInputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Observable;
 import java.util.Properties;
 
+import org.apache.jena.fuseki.EmbeddedFusekiServer;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runners.Parameterized;
 
-import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
-import com.hp.hpl.jena.rdf.model.Property;
-import com.hp.hpl.jena.update.UpdateFactory;
-import com.hp.hpl.jena.update.UpdateProcessor;
-import com.hp.hpl.jena.update.UpdateRequest;
-import com.hp.hpl.jena.update.UpdateExecutionFactory;
+import com.hp.hpl.jena.sparql.core.DatasetGraphFactory;
+import com.hp.hpl.jena.graph.Graph;
+import com.hp.hpl.jena.graph.NodeFactory;
+import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.mem.GraphMem;
 import com.hp.hpl.jena.query.DatasetAccessor;
 import com.hp.hpl.jena.query.DatasetAccessorFactory;
+import com.hp.hpl.jena.query.QueryExecution;
+import com.hp.hpl.jena.query.QueryExecutionFactory;
+import com.hp.hpl.jena.query.ResultSet;
 
-import eu.larkc.csparql.common.RDFTable;
 import eu.larkc.csparql.common.RDFTuple;
 import eu.larkc.csparql.common.config.Config;
-import eu.larkc.csparql.common.utils.CsparqlUtils;
-import eu.larkc.csparql.core.ResultFormatter;
 import eu.larkc.csparql.core.engine.CsparqlEngine;
 import eu.larkc.csparql.core.engine.CsparqlEngineImpl;
 import eu.larkc.csparql.core.engine.CsparqlQueryResultProxy;
-import eu.larkc.csparql.utils.Counter;
 import eu.larkc.csparql.utils.ResultTable;
 import eu.larkc.csparql.utils.TestGeneratorFromInput;
 
 public class CacheTests {
-	
+	private static EmbeddedFusekiServer fuseki;
+	private static DatasetAccessor accessor;
+
 	private CsparqlEngine engine;
 	private TestGeneratorFromInput streamGenerator;
+	
+
+	@BeforeClass public static void startupFuseki(){
+		fuseki = EmbeddedFusekiServer.create(3031, DatasetGraphFactory.createMem(), "test"); 
+		accessor = DatasetAccessorFactory.createHTTP("http://localhost:3031/test/data");
 		
+		fuseki.start();
+	}
+
+	@BeforeClass public static void initialConfig(){
+		Properties prop = new Properties();
+		prop.put("esper.externaltime.enabled", true);
+		prop.put("jena.service.cache.enabled", true);
+		Config.INSTANCE.setConfigParams(prop);
+	}
+
+	@AfterClass public static void shutdownFuseki(){
+		fuseki.stop();
+	}
+
+	@Before public void restartFuseki() {
+		accessor.getModel().removeAll();
+	} 
+
+	@Before public void setup(){
+		engine = new CsparqlEngineImpl();
+		engine.initialize();
+		streamGenerator = new TestGeneratorFromInput("http://myexample.org/stream", input);
+	}
+
+	@After public void destroy(){
+		//FIXME: concurrent exception
+		//		engine.destroy();
+	}
+
 	private long[] input;
 	private int width, slide;
 	private List<RDFTuple> expected;
@@ -57,8 +87,8 @@ public class CacheTests {
 		for(RDFTuple i : expected)
 			this.expected.add(i);
 	}
-	
-	
+
+
 	/*@Parameterized.Parameters
 	public static Iterable<?> data() {
 		return Arrays.asList(
@@ -101,21 +131,7 @@ public class CacheTests {
 					}
 				});
 	}*/
-	@BeforeClass public static void initialConfig(){
-		Properties prop = new Properties();
-		prop.put("esper.externaltime.enabled", true);
-		Config.INSTANCE.setConfigParams(prop);
-	}
-	@Before public void setup(){
-		engine = new CsparqlEngineImpl();
-		engine.initialize();
-		restartFuseki("");
-		streamGenerator = new TestGeneratorFromInput("http://myexample.org/stream", input);
-	}
-	@After public void destroy(){
-		//FIXME: concurrent exception
-		//		engine.destroy();
-	}
+
 
 	@Test public void shouldMatchQueryResult(){
 		String queryGetAll = "REGISTER QUERY PIPPO AS SELECT (COUNT(*) AS ?tot) FROM STREAM <http://myexample.org/stream> [RANGE "+width+"s STEP "+slide+"s]  WHERE { ?S ?P ?O "
@@ -143,66 +159,75 @@ public class CacheTests {
 		//		System.out.println(formatter.getResults());
 
 	}
-	
-	
-	public static void restartFuseki(String extension) {
-		try {
-				String UQ = "DELETE    { ?a ?b ?c } where{?a ?b ?c}; ";
-				UpdateRequest query = UpdateFactory.create(UQ);
-				UpdateProcessor qexec = UpdateExecutionFactory.createRemoteForm(query, "http://localhost:3030/test/update");
-				qexec.execute();
-				String serviceURI = "http://localhost:3030/test/data";
-				DatasetAccessor accessor;
-				accessor = DatasetAccessorFactory.createHTTP(serviceURI);
-				Model model = ModelFactory.createDefaultModel();
-				model.read(new FileInputStream("/home/soheila/git/githubCSPARQL/CSPARQL-engine/testRDF_L"+extension+".ttl"), null,
-						"TTL");
 
-				accessor.putModel(model);
-				Thread.sleep(1000);
-			
-		} catch (Exception e) {
+
+
+
+	//for manual checking purposes
+	public static void main(String[] args) {
+		Graph g = new GraphMem();
+		g.add(new Triple(
+				NodeFactory.createURI("http://example.org/s"), 
+				NodeFactory.createURI("http://example.org/p"), 
+				NodeFactory.createURI("http://example.org/o")));
+		
+		EmbeddedFusekiServer fuseki = EmbeddedFusekiServer.create(3031, DatasetGraphFactory.create(g), "test"); 
+		
+		fuseki.start();
+	
+		
+		String query = 
+				"SELECT ?S ?P ?O "
+				+ "WHERE { "
+				+"SERVICE <http://localhost:3031/test/sparql> {?S ?P ?O}"
+				+ "}";
+		
+		QueryExecution qe = QueryExecutionFactory.create(query, ModelFactory.createDefaultModel());
+		ResultSet rs = qe.execSelect();
+		
+		while(rs.hasNext()){
+			System.out.println(rs.next());
+		}
+		
+		fuseki.stop();
+		
+		/*
+		CsparqlEngine engine = new CsparqlEngineImpl();
+		engine.initialize();
+
+		TestGeneratorFromInput streamGenerator = new TestGeneratorFromInput("http://myexample.org/stream", 
+				new long[]{600, 1000, 1340, 1340, 2000, 2000, 2020, 3000, 3001});
+
+		String queryGetAll = 
+				"REGISTER QUERY PIPPO AS SELECT ?S ?P2 ?O2 FROM STREAM <http://myexample.org/stream> "
+						+ "[RANGE 2s STEP 1s]  "
+						+ "WHERE { ?S ?P ?O "
+						+"SERVICE <http://localhost:3030/test/sparql> {?S ?P2 ?O2}"
+						+ "}";
+		//				"REGISTER QUERY PIPPO AS SELECT ?O FROM STREAM <http://myexample.org/stream> [RANGE 4s STEP 4s]  WHERE { ?S ?P ?O } ORDER BY ?O";
+
+		//		TestGeneratorFromFile tg = new TestGeneratorFromFile("http://myexample.org/stream", "src/test/resources/sample_input.txt");
+		engine.registerStream(streamGenerator);
+		CsparqlQueryResultProxy c1 = null;
+
+		try {
+			c1 = engine.registerQuery(queryGetAll, false);
+		} catch (ParseException e) {
 			e.printStackTrace();
 		}
-	}
-	
-	//for manual checking purposes
-		public static void main(String[] args) {
-			CsparqlEngine engine = new CsparqlEngineImpl();
-			engine.initialize();
-
-			TestGeneratorFromInput streamGenerator = new TestGeneratorFromInput("http://myexample.org/stream", 
-					new long[]{600, 1000, 1340, 1340, 2000, 2000, 2020, 3000, 3001});
-
-			String queryGetAll = 
-					"REGISTER QUERY PIPPO AS SELECT ?S ?P2 ?O2 FROM STREAM <http://myexample.org/stream> "
-							+ "[RANGE 2s STEP 1s]  "
-							+ "WHERE { ?S ?P ?O "
-							+"SERVICE <http://localhost:3030/test/sparql> {?S ?P2 ?O2}"
-							+ "}";
-			//				"REGISTER QUERY PIPPO AS SELECT ?O FROM STREAM <http://myexample.org/stream> [RANGE 4s STEP 4s]  WHERE { ?S ?P ?O } ORDER BY ?O";
-
-			//		TestGeneratorFromFile tg = new TestGeneratorFromFile("http://myexample.org/stream", "src/test/resources/sample_input.txt");
-			engine.registerStream(streamGenerator);
-			CsparqlQueryResultProxy c1 = null;
-
-			try {
-				c1 = engine.registerQuery(queryGetAll, false);
-			} catch (ParseException e) {
-				e.printStackTrace();
-			}
-			c1.addObserver(new ResultFormatter() {
-				@Override
-				public void update(Observable o, Object arg) {
-					for(Iterator<RDFTuple> it = ((RDFTable)arg).getTuples().iterator();it.hasNext();){
-						RDFTuple tuple = it.next();
-						System.out.println(tuple);
-					}
-					System.out.println();
+		c1.addObserver(new ResultFormatter() {
+			@Override
+			public void update(Observable o, Object arg) {
+				for(Iterator<RDFTuple> it = ((RDFTable)arg).getTuples().iterator();it.hasNext();){
+					RDFTuple tuple = it.next();
+					System.out.println(tuple);
 				}
-			});
-			streamGenerator.run();
-			restartFuseki("1");
-		}
-	
+				System.out.println();
+			}
+		});
+		streamGenerator.run();
+		restartFuseki("1");
+		*/
+	}
+
 }

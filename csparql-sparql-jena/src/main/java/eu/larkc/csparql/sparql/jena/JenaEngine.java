@@ -559,8 +559,10 @@ public class JenaEngine implements SparqlEngine {
 	@Override
 	public void parseSparqlQuery(SparqlQuery query) throws ParseException {
 		Query spQuery = QueryFactory.create(query.getQueryCommand(), Syntax.syntaxSPARQL_11);
+		//FIXME: should not be a singleton
 		QueryRunner qr=new QueryRunner(spQuery.toString(), this.model);
 		CacheAcqua.INSTANCE.init(qr);//.computeCacheKeyVars(),qr.computeCacheValueVars());
+		
 		for(String s: spQuery.getGraphURIs()){
 			if(!jds.containsNamedModel(s))
 				throw new ParseException("The model in the FROM clause is missing in the internal dataset, please put the static model in the dataset using putStaticNamedModel(String iri, String location) method of the engine.", 0);

@@ -77,6 +77,7 @@ public class Config {
 			config.addProperty("esper.externaltime.enabled", false);
 			config.addProperty("esper.externaltime.tick", 0);
 			config.addProperty("csparql.timestampfunction", false);
+			config.addProperty("jena.service.cache.enabled", false);
 		}
 	}
 
@@ -85,7 +86,7 @@ public class Config {
 	}
 
 	public boolean isJenaUsingServiceCaching() {
-		return config.getBoolean("jena.service.cache");
+		return config.getBoolean("jena.service.cache.enabled");
 	}
 	
 	public String getJenaServiceCachingType() {

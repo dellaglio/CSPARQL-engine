@@ -3,15 +3,12 @@ package eu.larkc.csparql.sparql.jena.service;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.Test;
 
 import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.sparql.core.Var;
-import com.hp.hpl.jena.sparql.engine.binding.Binding;
 import com.hp.hpl.jena.sparql.engine.binding.BindingFactory;
 import com.hp.hpl.jena.sparql.engine.binding.BindingMap;
 
@@ -28,7 +25,7 @@ public class CacheAcquaTest {
 				Var.alloc("v3")
 				);
 		
-		CacheAcqua cache = new CacheAcqua();
+		CacheAcqua cache = new CacheAcqua(0.8f, 10, keyVars, valueVars);
 		assertEquals(keyVars, cache.getKeyVars());
 		assertEquals(valueVars, cache.getValueVars());
 	}
@@ -44,7 +41,7 @@ public class CacheAcquaTest {
 				Var.alloc("v3")
 				);
 		
-		CacheAcqua cache = new CacheAcqua();
+		CacheAcqua cache = new CacheAcqua(0.8f, 10, keyVars, valueVars);
 		//defining a binding 
 		BindingMap bm = BindingFactory.create();
 		bm.add(Var.alloc("k1"), NodeFactory.createLiteral("a"));
@@ -72,7 +69,7 @@ public class CacheAcquaTest {
 				Var.alloc("v3")
 				);
 		
-		CacheAcqua cache = new CacheAcqua();
+		CacheAcqua cache = new CacheAcqua(0.8f, 10, keyVars, valueVars);
 		//defining a binding 
 		BindingMap bm = BindingFactory.create();
 		bm.add(Var.alloc("k1"), NodeFactory.createLiteral("a"));
@@ -112,8 +109,7 @@ public class CacheAcquaTest {
 				Var.alloc("v3")
 				);
 		
-		CacheAcqua cache = new CacheAcqua();
-		cache.init(new QueryRunner(null, null));
+		CacheAcqua cache = new CacheAcqua(0.8f, 10, keyVars, valueVars);
 		assertEquals(false, cache.contains(bmKey));
 		cache.put(bm);
 		assertEquals(true, cache.contains(bmKey));

@@ -15,6 +15,8 @@ import com.hp.hpl.jena.sparql.engine.binding.Binding;
 import com.hp.hpl.jena.sparql.engine.main.QC;
 import com.hp.hpl.jena.vocabulary.RDF;
 
+import eu.larkc.csparql.sparql.jena.service.OpExecutorFactoryAcqua;
+
 public class Test {
 	public static void main(String[] args) {
 		QC.setFactory(ARQ.getContext(), new OpExecutorFactoryAcqua());
