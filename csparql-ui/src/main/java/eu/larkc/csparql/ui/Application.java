@@ -136,10 +136,6 @@ public final class Application {
          c1.addObserver(new ConsoleFormatter());
       }
    }
-
-   
-   
-   
    private Application() {
       // hidden constructor
    }

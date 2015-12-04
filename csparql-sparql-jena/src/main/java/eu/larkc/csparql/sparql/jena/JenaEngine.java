@@ -85,7 +85,9 @@ import eu.larkc.csparql.sparql.jena.common.JenaReasonerWrapper;
 import eu.larkc.csparql.sparql.jena.data_source.JenaDatasource;
 import eu.larkc.csparql.sparql.jena.ext.Timestamps;
 import eu.larkc.csparql.sparql.jena.ext.timestamp;
+import eu.larkc.csparql.sparql.jena.service.CacheAcqua;
 import eu.larkc.csparql.sparql.jena.service.OpExecutorFactoryAcqua;
+import eu.larkc.csparql.sparql.jena.service.QueryRunner;
 
 public class JenaEngine implements SparqlEngine {
 
@@ -201,7 +203,7 @@ public class JenaEngine implements SparqlEngine {
 		} else {
 			qexec = QueryExecutionFactory.create(q, model);
 		}
-
+		
 		//		if(activateInference){
 		//			
 		//			if(inferenceRulesFileSerialization == null || inferenceRulesFileSerialization.isEmpty()){
@@ -266,14 +268,13 @@ public class JenaEngine implements SparqlEngine {
 
 		if (q.isSelectType())
 		{
-
-			final ResultSet resultSet = qexec.execSelect();
+			final ResultSet resultSet = qexec.execSelect();//constructor of query IterService
 
 			table = new RDFTable(resultSet.getResultVars());
 
 			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
-			ResultSetRewindable tempResultSet = ResultSetFactory.makeRewindable(resultSet);
+			ResultSetRewindable tempResultSet = ResultSetFactory.makeRewindable(resultSet);//next stage of queryIterService
 
 			ResultSetFormatter.outputAsJSON(bos, tempResultSet);
 			table.setJsonSerialization(bos.toString());
@@ -557,6 +558,8 @@ public class JenaEngine implements SparqlEngine {
 	@Override
 	public void parseSparqlQuery(SparqlQuery query) throws ParseException {
 		Query spQuery = QueryFactory.create(query.getQueryCommand(), Syntax.syntaxSPARQL_11);
+		QueryRunner qr=new QueryRunner(spQuery.toString(), this.model);
+		CacheAcqua.INSTANCE.init(qr);//.computeCacheKeyVars(),qr.computeCacheValueVars());
 		for(String s: spQuery.getGraphURIs()){
 			if(!jds.containsNamedModel(s))
 				throw new ParseException("The model in the FROM clause is missing in the internal dataset, please put the static model in the dataset using putStaticNamedModel(String iri, String location) method of the engine.", 0);

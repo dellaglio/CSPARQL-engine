@@ -15,23 +15,32 @@ import com.hp.hpl.jena.sparql.engine.main.iterator.QueryIterService;
 
 
 public class OpExecutorAcqua extends OpExecutor {
+
+	
 	protected OpExecutorAcqua(ExecutionContext execCxt) {
 		super(execCxt);
+		
 	}
 
 	@Override
 	protected QueryIterator execute(OpService opService, QueryIterator input) {
-		//System.out.println("Catched!");
-		Set<Binding> outerContent = new HashSet<Binding>();
+		System.out.println("Catched!");
+		
+		
+		
+		/*Set<Binding> outerContent = new HashSet<Binding>();
 		while(input.hasNext()){
 			Binding b = input.next();
 			//System.out.println(b);
 			outerContent.add(b);
 		}
 		QueryIterator outerContentIterator =  new QueryIterPlainWrapper(outerContent.iterator());
-		
+		*/
 		//if (QueryExecUtils.moe.equalsIgnoreCase("csparql"))
-    		return new QueryIterService(outerContentIterator, opService, execCxt) ;
+    		//return new QueryIterService(input, opService, execCxt) ;
+		return new QueryIterServiceCache(input, opService, execCxt) ;
+    		
+    		
     	/*if (QueryExecUtils.moe.equalsIgnoreCase("WBM")) {
     		return new QueryIterServiceWBM(input, opService, execCxt) ;
     	}
