@@ -59,7 +59,7 @@ public class CacheTests {
 	}
 	
 	
-	@Parameterized.Parameters
+	/*@Parameterized.Parameters
 	public static Iterable<?> data() {
 		return Arrays.asList(
 				new Object[][]{
@@ -100,7 +100,7 @@ public class CacheTests {
 //						5, 5, new int[]{29, 33, 36, 35, 36, 35, 37}
 					}
 				});
-	}
+	}*/
 	@BeforeClass public static void initialConfig(){
 		Properties prop = new Properties();
 		prop.put("esper.externaltime.enabled", true);
@@ -109,7 +109,7 @@ public class CacheTests {
 	@Before public void setup(){
 		engine = new CsparqlEngineImpl();
 		engine.initialize();
-		restartFuseki();
+		restartFuseki("");
 		streamGenerator = new TestGeneratorFromInput("http://myexample.org/stream", input);
 	}
 	@After public void destroy(){
@@ -145,7 +145,7 @@ public class CacheTests {
 	}
 	
 	
-	public static void restartFuseki() {
+	public static void restartFuseki(String extension) {
 		try {
 				String UQ = "DELETE    { ?a ?b ?c } where{?a ?b ?c}; ";
 				UpdateRequest query = UpdateFactory.create(UQ);
@@ -155,10 +155,11 @@ public class CacheTests {
 				DatasetAccessor accessor;
 				accessor = DatasetAccessorFactory.createHTTP(serviceURI);
 				Model model = ModelFactory.createDefaultModel();
-				model.read(new FileInputStream("/home/soheila/git/githubCSPARQL/CSPARQL-engine/testRDF_L.ttl"), null,
+				model.read(new FileInputStream("/home/soheila/git/githubCSPARQL/CSPARQL-engine/testRDF_L"+extension+".ttl"), null,
 						"TTL");
 
 				accessor.putModel(model);
+				Thread.sleep(1000);
 			
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -174,7 +175,7 @@ public class CacheTests {
 					new long[]{600, 1000, 1340, 1340, 2000, 2000, 2020, 3000, 3001});
 
 			String queryGetAll = 
-					"REGISTER QUERY PIPPO AS SELECT ?S ?o ?O2 FROM STREAM <http://myexample.org/stream> "
+					"REGISTER QUERY PIPPO AS SELECT ?S ?P2 ?O2 FROM STREAM <http://myexample.org/stream> "
 							+ "[RANGE 2s STEP 1s]  "
 							+ "WHERE { ?S ?P ?O "
 							+"SERVICE <http://localhost:3030/test/sparql> {?S ?P2 ?O2}"
@@ -195,12 +196,13 @@ public class CacheTests {
 				public void update(Observable o, Object arg) {
 					for(Iterator<RDFTuple> it = ((RDFTable)arg).getTuples().iterator();it.hasNext();){
 						RDFTuple tuple = it.next();
-						System.out.println(tuple.get(0));
+						System.out.println(tuple);
 					}
 					System.out.println();
 				}
 			});
 			streamGenerator.run();
+			restartFuseki("1");
 		}
 	
 }

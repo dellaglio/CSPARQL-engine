@@ -39,15 +39,14 @@ public class QueryRunner {
 	public QueryRunner(String queryString, Model localData){
 		query = QueryFactory.create(queryString);
 		model = localData;
-		serviceCount= countServiceClauses();//serviceLsit is initialized and filled in this function
 		parsedQuery = Algebra.compile(query);
 		System.out.println("Query (compiled):");
 		parsedQuery.output(IndentedWriter.stdout);
-
 		optimizedQuery = Algebra.optimize(parsedQuery);
 		System.out.println("Query (optimized):");
 		optimizedQuery.output(IndentedWriter.stdout);
-
+		serviceCount= countServiceClauses();//serviceLsit is initialized and filled in this function based on parsedQuery
+		
 	}
 
 	public Query getQuery(){
@@ -230,8 +229,7 @@ public class QueryRunner {
 				return OpNull.create();
 			}
 		}, parsedQuery);
-
-		return os.size();
+return os.size();
 	}
 
 	public QueryIterator execute(){

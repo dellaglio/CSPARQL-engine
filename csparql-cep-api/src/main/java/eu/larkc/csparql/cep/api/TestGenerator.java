@@ -46,8 +46,8 @@ public class TestGenerator extends RdfStream implements Runnable {
     	 long start = System.nanoTime();
 //         final RdfQuadruple q = new RdfQuadruple("http://myexample.org/S" + this.c,
 //               "http://myexample.org/P" + this.c, "http://myexample.org/O" + this.c, this.c);
-         final RdfQuadruple q = new RdfQuadruple("http://myexample.org/S" + this.c,
-                 "http://myexample.org/P" + this.c, "http://myexample.org/O" + this.c, System.currentTimeMillis());//.nanoTime());
+         final RdfQuadruple q = new RdfQuadruple("http://example.org/S" + this.c,
+                 "http://example.org/P" + this.c, "http://example.org/O" + this.c, System.currentTimeMillis());//.nanoTime());
          //System.out.println("http://myexample.org/S" + this.c+"\thttp://myexample.org/P" + this.c+ "\thttp://myexample.org/O" + this.c+ "\t"+System.currentTimeMillis());
          long end = System.nanoTime();
          long duration = end-start;

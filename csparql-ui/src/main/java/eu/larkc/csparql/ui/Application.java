@@ -63,8 +63,8 @@ public final class Application {
 				Model model = ModelFactory.createDefaultModel();
 				model.read(new FileInputStream("/home/soheila/git/githubCSPARQL/CSPARQL-engine/testRDF_L.ttl"), null,
 						"TTL");
-
 				accessor.putModel(model);
+				Thread.sleep(1000);
 			
 		} catch (Exception e) {
 			e.printStackTrace();
