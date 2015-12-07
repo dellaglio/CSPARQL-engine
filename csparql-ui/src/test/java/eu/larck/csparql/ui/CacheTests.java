@@ -20,6 +20,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.reasoner.rulesys.builtins.Equal;
 import com.hp.hpl.jena.sparql.core.DatasetGraphFactory;
 import com.hp.hpl.jena.graph.Graph;
 import com.hp.hpl.jena.graph.NodeFactory;
@@ -40,6 +41,7 @@ import eu.larkc.csparql.core.engine.CsparqlEngineImpl;
 import eu.larkc.csparql.core.engine.CsparqlQueryResultProxy;
 import eu.larkc.csparql.utils.ResultTable;
 import eu.larkc.csparql.utils.TestGeneratorFromInput;
+import junit.framework.Assert;
 
 
 @RunWith(Parameterized.class)
@@ -47,6 +49,20 @@ public class CacheTests {
 	public static class TestRDFTupleResults extends RDFTuple{
 		public TestRDFTupleResults(String... values) {
 			super.addFields(values);
+		}
+		public boolean equals(Object object){
+			if(object instanceof TestRDFTupleResults || object instanceof RDFTuple){
+				RDFTuple temp=((RDFTuple)object);
+				
+				for(int m=0;m< temp.toString().split("\t").length;m++){
+					if (!temp.get(m).equalsIgnoreCase(this.get(m)))
+						return false;
+				}
+				return true;
+
+			} else {
+				return false;
+			}
 		}
 	}
 	private static EmbeddedFusekiServer fuseki;
@@ -64,7 +80,7 @@ public class CacheTests {
 					NodeFactory.createURI("http://example.org/followerCount"), 
 					NodeFactory.createURI("http://example.org/k")));
 		}
-		
+
 		fuseki = EmbeddedFusekiServer.create(3031, DatasetGraphFactory.create(g), "test"); 
 		accessor = DatasetAccessorFactory.createHTTP("http://localhost:3031/test/data");
 		fuseki.start();
@@ -98,14 +114,14 @@ public class CacheTests {
 
 	private long[] input;
 	private int width, slide;
-	private List<List<RDFTuple>> expected;
+	private List<List<TestRDFTupleResults>> expected;
 
-	public CacheTests(long[] input, int width, int slide, List<List<RDFTuple>> expected){
+	public CacheTests(long[] input, int width, int slide, List<List<TestRDFTupleResults>> expected){
 		this.input = input;
 		this.width = width;
 		this.slide = slide;
 		this.expected = new ArrayList();
-		for(List<RDFTuple> i : expected)
+		for(List<TestRDFTupleResults> i : expected)
 			this.expected.add(i);
 	}
 
@@ -143,7 +159,7 @@ public class CacheTests {
 
 	@Test public void shouldMatchQueryResult(){
 		String queryGetAll = "REGISTER QUERY PIPPO AS SELECT ?S ?P2 ?O2 FROM STREAM <http://myexample.org/stream> [RANGE "+width+"s STEP "+slide+"s]"
-				+ "  WHERE { ?S ?P ?O SERVICE <http://localhost:3030/test/sparql> {?S ?P2 ?O2}"
+				+ "  WHERE { ?S ?P ?O SERVICE <http://localhost:3031/test/sparql> {?S ?P2 ?O2}"
 				+ "}";
 		System.out.println(queryGetAll);
 
@@ -159,11 +175,17 @@ public class CacheTests {
 		ResultTable formatter = new ResultTable();
 		c1.addObserver(formatter);
 		streamGenerator.run();
-
-		List<RDFTuple> actual = formatter.getResults();
+		List<List<RDFTuple>> actual = formatter.getResults();
+		
 		System.out.println(actual);
 		System.out.println(">>>.."+expected);
-		assertEquals(expected, actual);
+		for(int i = 0; i<actual.size(); i++)
+		{
+			List<RDFTuple> tempA=actual.get(i);
+			List<TestRDFTupleResults> tempE=expected.get(i);
+			for(int j=0;j<tempA.size();j++)
+				assertEquals(tempE.get(j), tempA.get(j));
+		}
 	}
 
 
