@@ -16,7 +16,7 @@ public class TestGeneratorFromInput extends RdfStream{
 	}
 	
 	public void run(){
-		int i = 1;
+		int i = 0;
 		for(Long timestamp : timestamps){
 			String c;
 			/*if(i<10)
@@ -25,6 +25,7 @@ public class TestGeneratorFromInput extends RdfStream{
 				c=""+i++;
 				
 			RdfQuadruple tempQ = new RdfQuadruple(subj+c, pred+c, obj+c, timestamp);
+			//System.out.println("streamed "+subj+c+ pred+c+ obj+c+ timestamp);
 			this.put(tempQ);
 		}
 	}

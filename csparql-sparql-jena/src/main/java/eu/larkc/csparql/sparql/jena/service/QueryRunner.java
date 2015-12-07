@@ -34,7 +34,7 @@ public class QueryRunner {
 	private Query query;
 	private Op parsedQuery;
 	private Op optimizedQuery;
-	private List<String> serviceList;
+	private List<OpService> serviceList;
 	private int serviceCount;
 	public QueryRunner(String queryString, Model localData){
 		query = QueryFactory.create(queryString);
@@ -45,8 +45,8 @@ public class QueryRunner {
 		optimizedQuery = Algebra.optimize(parsedQuery);
 		System.out.println("Query (optimized):");
 		optimizedQuery.output(IndentedWriter.stdout);
-		serviceCount= countServiceClauses();//serviceLsit is initialized and filled in this function based on parsedQuery
-		
+		serviceCount= extractServiceClauses();//serviceLsit is initialized and filled in this function based on parsedQuery
+
 	}
 
 	public Query getQuery(){
@@ -66,23 +66,23 @@ public class QueryRunner {
 		final Set<Var> serviceVars = new HashSet<Var>();
 		final Set<Var> otherVars = new HashSet<Var>();
 		for(int i=0;i<os.size();i++){			
-		OpWalker.walk(os.get(i).getSubOp(),
-				// For each element...
-				new OpVisitorBase() {
-			// ...when it's a SERVICE block 
-			public void visit(OpBGP es){
-				Iterator<Triple> triples = es.getPattern().getList().iterator();
-				while (triples.hasNext()) {
-					Triple temp = triples.next();
-					if(temp.getObject() instanceof Var)
-						serviceVars.add((Var)temp.getObject());
-					if(temp.getSubject() instanceof Var)
-						serviceVars.add((Var)temp.getSubject());
-					if(temp.getPredicate() instanceof Var)
-						serviceVars.add((Var)temp.getPredicate());
+			OpWalker.walk(os.get(i).getSubOp(),
+					// For each element...
+					new OpVisitorBase() {
+				// ...when it's a SERVICE block 
+				public void visit(OpBGP es){
+					Iterator<Triple> triples = es.getPattern().getList().iterator();
+					while (triples.hasNext()) {
+						Triple temp = triples.next();
+						if(temp.getObject() instanceof Var)
+							serviceVars.add((Var)temp.getObject());
+						if(temp.getSubject() instanceof Var)
+							serviceVars.add((Var)temp.getSubject());
+						if(temp.getPredicate() instanceof Var)
+							serviceVars.add((Var)temp.getPredicate());
+					}
 				}
-			}
-		});	
+			});	
 		}
 		OpWalker.walk(reminderQueryWithOutService,
 				// For each element...
@@ -114,8 +114,8 @@ public class QueryRunner {
 				}
 			}	
 		});			
-		
-		
+
+
 		Set<Var> intersection = new HashSet<Var>(serviceVars); // use the copy constructor
 		intersection.retainAll(otherVars);
 		serviceVars.removeAll(intersection);
@@ -162,23 +162,23 @@ public class QueryRunner {
 		final Set<Var> otherVars = new HashSet<Var>();
 		//filling serviceVars with variables in SERVICE clauses
 		for(int i=0;i<os.size();i++){
-		OpWalker.walk(os.get(i).getSubOp(),
-				// For each element...
-				new OpVisitorBase() {
-			// ...when it's a SERVICE block 
-			public void visit(OpBGP es){
-				Iterator<Triple> triples = es.getPattern().getList().iterator();
-				while (triples.hasNext()) {
-					Triple temp = triples.next();
-					if(temp.getObject() instanceof Var)
-						serviceVars.add((Var)temp.getObject());
-					if(temp.getSubject() instanceof Var)
-						serviceVars.add((Var)temp.getSubject());
-					if(temp.getPredicate() instanceof Var)
-						serviceVars.add((Var)temp.getPredicate());
+			OpWalker.walk(os.get(i).getSubOp(),
+					// For each element...
+					new OpVisitorBase() {
+				// ...when it's a SERVICE block 
+				public void visit(OpBGP es){
+					Iterator<Triple> triples = es.getPattern().getList().iterator();
+					while (triples.hasNext()) {
+						Triple temp = triples.next();
+						if(temp.getObject() instanceof Var)
+							serviceVars.add((Var)temp.getObject());
+						if(temp.getSubject() instanceof Var)
+							serviceVars.add((Var)temp.getSubject());
+						if(temp.getPredicate() instanceof Var)
+							serviceVars.add((Var)temp.getPredicate());
+					}
 				}
-			}
-		});	
+			});	
 		}
 		//filling otherVars with variables not in SERVICE clauses
 		OpWalker.walk(reminderQueryWithOutService,
@@ -218,18 +218,16 @@ public class QueryRunner {
 		return returnList;
 	}
 
-	public int countServiceClauses() {
+	public int extractServiceClauses() {
 		serviceList=new ArrayList<>();
-		final List<OpService> os = new ArrayList<OpService>();
 		//removes the SERVICES clauses from original query and put it in os
 		Transformer.transform(new TransformCopy(){
 			public Op transform(OpService opService, Op subOp){
-				os.add(opService);
-				serviceList.add(opService.getService().toString());
+				serviceList.add(opService/*.getService().toString()*/);
 				return OpNull.create();
 			}
 		}, parsedQuery);
-return os.size();
+		return serviceList.size();
 	}
 
 	public QueryIterator execute(){
@@ -299,7 +297,7 @@ return os.size();
 
 	}
 
-	public List<String> getSERVICEEndpointURI() {
+	public List<OpService> getSERVICEEndpointURI() {
 		// TODO Auto-generated method stub
 		return serviceList;
 	}

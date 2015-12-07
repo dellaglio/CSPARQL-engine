@@ -13,6 +13,9 @@ import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.sparql.algebra.OpAsQuery;
+import com.hp.hpl.jena.sparql.algebra.op.OpService;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.engine.binding.Binding;
 import com.hp.hpl.jena.sparql.engine.binding.BindingFactory;
@@ -55,21 +58,23 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 
 		but it should be actually filled from 
 		remote data provider according to query*/ 	 
-		fillCache(qr.getQuery(),qr.getSERVICEEndpointURI());
+		fillCache(qr);
 
 	}
 
-	private void fillCache(Query query,List<String> endpoints) {
-		for(int i=0;i<endpoints.size();i++){
+	private void fillCache(QueryRunner qr) {
+		
+		for(int i=0;i<qr.extractServiceClauses();i++){
+			OpService opService=qr.getSERVICEEndpointURI().get(i);
+			Node endpoint = opService.getService();
+			Query query = OpAsQuery.asQuery(opService.getSubOp());
 			QueryExecution qe = QueryExecutionFactory.sparqlService(
-					endpoints.get(0), query);//TODO: for the moment we assume that there is only one service clause in the query
-			ResultSet as = qe.execSelect();
-			for (; as.hasNext();) {
-				QuerySolution qs = as.nextSolution();
-
+					endpoint.getURI(), query);
+			ResultSet rs = qe.execSelect();		
+			while (rs.hasNext()) {
+				QuerySolution qs = rs.next();//nextSolution();
 				BindingProjectNamed solb = (BindingProjectNamed) BindingUtils
 						.asBinding(qs);
-
 				put(solb);
 			}		
 		}	
