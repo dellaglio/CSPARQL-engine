@@ -54,6 +54,7 @@ public class QueryIterServiceCache  extends QueryIterRepeatApply{
 	        jenaCache.printContent();
 	        tmp = jenaCache.get(key);
 		}
+		if (tmp==null) return null;
 		QueryIterator qIter = new QueryIterPlainWrapper(tmp.iterator());			
 		QueryIterator qIter2 = new QueryIterCommonParent(qIter, outerBinding, getExecContext()) ;
 		return qIter2 ;

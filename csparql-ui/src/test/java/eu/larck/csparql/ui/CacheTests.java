@@ -127,7 +127,8 @@ public class CacheTests {
 
 
 	@Parameterized.Parameters
-	public static Iterable<?> data() {
+	public static Iterable<?> data() {//this  test output is true for cases when the cache size is very small and none of the stream members would be included in the initial cache
+		//however if the cache is large enough to include the stream elements from the begining their expected value should be the value of initial cache which is k
 		return Arrays.asList(
 				new Object[][]{
 					{
