@@ -134,23 +134,23 @@ public class CacheTests {
 						new long[]{1000, 1340, 2000, 2020, 3000, 3001}, 
 						1, 1, new ArrayList(Arrays.asList(
 								new ArrayList(Arrays.asList(
-										new TestRDFTupleResults("http://example.org/S2","http://example.org/followerCount","http://example.org/k"),
-										new TestRDFTupleResults("http://example.org/S1","http://example.org/followerCount","http://example.org/k"))),
+										new TestRDFTupleResults("http://example.org/S2","http://example.org/followerCount","http://example.org/102"),
+										new TestRDFTupleResults("http://example.org/S1","http://example.org/followerCount","http://example.org/101"))),
 								new ArrayList(Arrays.asList(
-										new TestRDFTupleResults("http://example.org/S4","http://example.org/followerCount","http://example.org/k"),
-										new TestRDFTupleResults("http://example.org/S3","http://example.org/followerCount","http://example.org/k")
+										new TestRDFTupleResults("http://example.org/S4","http://example.org/followerCount","http://example.org/104"),
+										new TestRDFTupleResults("http://example.org/S3","http://example.org/followerCount","http://example.org/103")
 										))))
 					},{
 						new long[]{600, 1000, 1340, 2000, 2020, 3000, 3001}, 
 						1, 1, new ArrayList(Arrays.asList(
 								new ArrayList(Arrays.asList(
-										new TestRDFTupleResults("http://example.org/S1","http://example.org/followerCount","http://example.org/k"))),
+										new TestRDFTupleResults("http://example.org/S1","http://example.org/followerCount","http://example.org/101"))),
 								new ArrayList(Arrays.asList(
-										new TestRDFTupleResults("http://example.org/S2","http://example.org/followerCount","http://example.org/k"),
-										new TestRDFTupleResults("http://example.org/S3","http://example.org/followerCount","http://example.org/k"))),
+										new TestRDFTupleResults("http://example.org/S2","http://example.org/followerCount","http://example.org/102"),
+										new TestRDFTupleResults("http://example.org/S3","http://example.org/followerCount","http://example.org/103"))),
 								new ArrayList(Arrays.asList(
-										new TestRDFTupleResults("http://example.org/S5","http://example.org/followerCount","http://example.org/k"),
-										new TestRDFTupleResults("http://example.org/S4","http://example.org/followerCount","http://example.org/k")
+										new TestRDFTupleResults("http://example.org/S5","http://example.org/followerCount","http://example.org/105"),
+										new TestRDFTupleResults("http://example.org/S4","http://example.org/followerCount","http://example.org/104")
 										))))
 					}
 				});
@@ -165,7 +165,7 @@ public class CacheTests {
 
 		engine.registerStream(streamGenerator);
 		CsparqlQueryResultProxy c1 = null;
-
+		changeFusekiContent();
 		try {
 			c1 = engine.registerQuery(queryGetAll, false);
 		} catch (ParseException e) {
@@ -177,8 +177,8 @@ public class CacheTests {
 		streamGenerator.run();
 		List<List<RDFTuple>> actual = formatter.getResults();
 		
-		System.out.println(actual);
-		System.out.println(">>>.."+expected);
+		/*System.out.println(actual);
+		System.out.println(">>>.."+expected);*/
 		for(int i = 0; i<actual.size(); i++)
 		{
 			List<RDFTuple> tempA=actual.get(i);
@@ -192,7 +192,7 @@ public class CacheTests {
 
 
 	//for manual checking purposes
-	public static void TestFuseki(String[] args) {
+	public static void main2(String[] args) {
 		Graph g = new GraphMem();
 		for (int k=0;k<50;k++){
 			g.add(new Triple(
@@ -221,15 +221,16 @@ public class CacheTests {
 		fuseki.stop();
 	}
 	public static void main(String[] args) {
+		
 		Graph g = new GraphMem();
-		for (int k=0;k<50;k++){
+		for (int k=0;k<3;k++){
 			g.add(new Triple(
 					NodeFactory.createURI("http://example.org/S"+k), 
 					NodeFactory.createURI("http://example.org/followerCount"), 
-					NodeFactory.createURI("http://example.org/k")));
+					NodeFactory.createURI("http://example.org/k"+k)));
 		}
 		EmbeddedFusekiServer fuseki = EmbeddedFusekiServer.create(3031, DatasetGraphFactory.create(g), "test"); 
-
+		accessor = DatasetAccessorFactory.createHTTP("http://localhost:3031/test/data");
 		fuseki.start();	
 
 		CsparqlEngine engine = new CsparqlEngineImpl();
@@ -265,10 +266,23 @@ public class CacheTests {
 				System.out.println();
 			}
 		});
+		changeFusekiContent();
 		streamGenerator.run();
 
 		fuseki.stop();
 
+	}
+
+	private static void changeFusekiContent() {
+		accessor.getModel().removeAll();
+		Graph g2 = new GraphMem();
+		for (int k=0;k<50;k++){
+			g2.add(new Triple(
+					NodeFactory.createURI("http://example.org/S"+k), 
+					NodeFactory.createURI("http://example.org/followerCount"), 
+					NodeFactory.createURI("http://example.org/"+(k+100))));
+		}
+		accessor.putModel(ModelFactory.createModelForGraph(g2));		
 	}
 
 }

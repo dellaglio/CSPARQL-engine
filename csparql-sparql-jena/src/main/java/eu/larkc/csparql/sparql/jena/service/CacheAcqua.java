@@ -30,7 +30,7 @@ import com.hp.hpl.jena.sparql.engine.binding.BindingUtils;
 public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 
 	public static final CacheAcqua INSTANCE = new CacheAcqua();
-
+	public static int cacheSize=3;
 
 	private List<Var> keys; 
 	private List<Var> values;
@@ -42,7 +42,7 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 	}
 	
 	public CacheAcqua(){
-		super(0.8f, 1000);
+		super(0.8f, 3);
 
 	}
 	
@@ -70,12 +70,14 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 			Query query = OpAsQuery.asQuery(opService.getSubOp());
 			QueryExecution qe = QueryExecutionFactory.sparqlService(
 					endpoint.getURI(), query);
-			ResultSet rs = qe.execSelect();		
-			while (rs.hasNext()) {
+			ResultSet rs = qe.execSelect();	
+			while (rs.hasNext() && super.size()!=cacheSize) {
+				System.out.println(">>>>>>>"+super.size());
 				QuerySolution qs = rs.next();//nextSolution();
 				BindingProjectNamed solb = (BindingProjectNamed) BindingUtils
 						.asBinding(qs);
 				put(solb);
+				printContent();
 			}		
 		}	
 	}
@@ -134,8 +136,17 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 			HashSet<Binding> bhs=new HashSet<>();
 			bhs.add(valueBm);
 			return super.put(keyBm, bhs);
-		}
-
+		}		
+		
+	}
+	public void printContent(){
+		System.out.println("START PRINTING CACHE CONTENT");
+		Iterator<Binding> it = super.keys();
+        while(it.hasNext()){
+        	System.out.println(it.next());
+        }
+        System.out.println("END PRINTING CACHE CONTENT");
+		
 	}
 
 }
