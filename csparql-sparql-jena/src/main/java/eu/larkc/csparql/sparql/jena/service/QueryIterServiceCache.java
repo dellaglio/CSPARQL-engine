@@ -1,5 +1,6 @@
 package eu.larkc.csparql.sparql.jena.service;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -14,17 +15,19 @@ import com.hp.hpl.jena.sparql.engine.iterator.QueryIterCommonParent;
 import com.hp.hpl.jena.sparql.engine.iterator.QueryIterPlainWrapper;
 import com.hp.hpl.jena.sparql.engine.iterator.QueryIterRepeatApply;
 import com.hp.hpl.jena.sparql.engine.main.QC;
+import com.hp.hpl.jena.sparql.util.Symbol;
 
 public class QueryIterServiceCache  extends QueryIterRepeatApply{
 	CacheAcqua jenaCache;
 	OpService opService ;
-	
+	QueryRunner qr;
 	public QueryIterServiceCache(QueryIterator input, OpService opService, ExecutionContext context)
 	{
 		super(input, context) ;
 		jenaCache = CacheAcqua.INSTANCE;
 		this.opService = opService ;		
-
+		qr =(QueryRunner) context.getContext().get(Symbol.create("acqua:runner"));	
+		
 	}
 
 
@@ -32,7 +35,7 @@ public class QueryIterServiceCache  extends QueryIterRepeatApply{
 	protected QueryIterator nextStage(Binding outerBinding)
 	{
 
-		Binding key = jenaCache.getKeyBinding(outerBinding);
+		Binding key = qr.getKeyBinding(outerBinding);
 		Set<Binding> tmp = jenaCache.get(key);
 		if(tmp==null){//if the key is not in cache we retrive it from remote and put it in the cache making sure that tmp is not null
 			System.out.println(key+" windows entry without matching entry in cache! fetching from service URL!");
@@ -49,11 +52,11 @@ public class QueryIterServiceCache  extends QueryIterRepeatApply{
 	        while(qIter2.hasNext())
 	        {
 	        	Binding solb=qIter2.next();
-	        	jenaCache.put(solb);
+	        	jenaCache.put(qr.getKeyBinding(solb),qr.getValueBinding(solb));
 	        } 
-	        jenaCache.printContent();
+	        //jenaCache.printContent();
 	        tmp = jenaCache.get(key);
-		}
+		}else System.out.println(key+" windows entry with matching entry in cache!");
 		if (tmp==null) return null;
 		QueryIterator qIter = new QueryIterPlainWrapper(tmp.iterator());			
 		QueryIterator qIter2 = new QueryIterCommonParent(qIter, outerBinding, getExecContext()) ;

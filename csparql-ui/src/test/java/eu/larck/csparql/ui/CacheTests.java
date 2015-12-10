@@ -32,6 +32,8 @@ import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryExecutionFactory;
 import com.hp.hpl.jena.query.ResultSet;
 
+import eu.larkc.csparql.cep.api.MultiStreamGeneratorFromInput;
+import eu.larkc.csparql.cep.api.TestGeneratorFromInput;
 import eu.larkc.csparql.common.RDFTable;
 import eu.larkc.csparql.common.RDFTuple;
 import eu.larkc.csparql.common.config.Config;
@@ -40,8 +42,6 @@ import eu.larkc.csparql.core.engine.CsparqlEngine;
 import eu.larkc.csparql.core.engine.CsparqlEngineImpl;
 import eu.larkc.csparql.core.engine.CsparqlQueryResultProxy;
 import eu.larkc.csparql.utils.ResultTable;
-import eu.larkc.csparql.utils.TestGeneratorFromInput;
-import junit.framework.Assert;
 
 
 @RunWith(Parameterized.class)
@@ -65,25 +65,31 @@ public class CacheTests {
 			}
 		}
 	}
-	private static EmbeddedFusekiServer fuseki;
-	private static DatasetAccessor accessor;
-
+	private static int numberOfInstances=2;
+	private static int numberOfFusekiChange=1;//keep track of the object values for testing
+	private static EmbeddedFusekiServer[] fuseki=new EmbeddedFusekiServer[numberOfInstances];
+	private static DatasetAccessor[] accessor=new DatasetAccessor[numberOfInstances];
 	private CsparqlEngine engine;
 	private TestGeneratorFromInput streamGenerator;
 
 
 	@BeforeClass public static void startupFuseki(){
-		Graph g = new GraphMem();
-		for (int k=0;k<50;k++){
-			g.add(new Triple(
-					NodeFactory.createURI("http://example.org/S"+k), 
-					NodeFactory.createURI("http://example.org/followerCount"), 
-					NodeFactory.createURI("http://example.org/k")));
-		}
+		//we attend Y+1 to the end of subject and object to reveal the fuseki instance that it hosting them for testing purposes
+		//to make sure that cache didn't mixup cache content of 2 queries
+		for(int y=0;y<numberOfInstances;y++){
+			Graph g = new GraphMem();
+			for (int k=0;k<20;k++){
+				g.add(new Triple(
+						NodeFactory.createURI("http://example.org/S"+(y+1)+"_"+k), 
+						NodeFactory.createURI("http://example.org/followerCount"), 
+						NodeFactory.createURI("http://example.org/k")));
+			}
 
-		fuseki = EmbeddedFusekiServer.create(3031, DatasetGraphFactory.create(g), "test"); 
-		accessor = DatasetAccessorFactory.createHTTP("http://localhost:3031/test/data");
-		fuseki.start();
+			fuseki[y] = EmbeddedFusekiServer.create(3031+y, DatasetGraphFactory.create(g), "test"+(y+1)); 
+			accessor[y] = DatasetAccessorFactory.createHTTP("http://localhost:303"+(y+1)+"/test"+(y+1)+"/data");		
+			fuseki[y].start();	
+		}
+		
 	}
 
 	@BeforeClass public static void initialConfig(){
@@ -94,7 +100,8 @@ public class CacheTests {
 	}
 
 	@AfterClass public static void shutdownFuseki(){
-		fuseki.stop();
+		for(int y=0;y<fuseki.length;y++)
+		fuseki[y].stop();
 	}
 
 	/*@Before public void restartFuseki() {
@@ -114,7 +121,9 @@ public class CacheTests {
 
 	private long[] input;
 	private int width, slide;
-	private List<List<TestRDFTupleResults>> expected;
+	private List<List<TestRDFTupleResults>> expected;//each evaluation results to alist of RDFTuple
+	//if we have many queries the expected should be a List of List Of List of RDFTuples--> each query each evaluation resulted in a list of RDFTuple
+	//and also the input should be list of long[] if we have multiple streams
 
 	public CacheTests(long[] input, int width, int slide, List<List<TestRDFTupleResults>> expected){
 		this.input = input;
@@ -135,51 +144,52 @@ public class CacheTests {
 						new long[]{1000, 1340, 2000, 2020, 3000, 3001}, 
 						1, 1, new ArrayList(Arrays.asList(
 								new ArrayList(Arrays.asList(
-										new TestRDFTupleResults("http://example.org/S2","http://example.org/followerCount","http://example.org/102"),
-										new TestRDFTupleResults("http://example.org/S1","http://example.org/followerCount","http://example.org/101"))),
+										new TestRDFTupleResults("http://example.org/S1_2","http://example.org/followerCount","http://example.org/k"),
+										new TestRDFTupleResults("http://example.org/S1_1","http://example.org/followerCount","http://example.org/k"))),
 								new ArrayList(Arrays.asList(
-										new TestRDFTupleResults("http://example.org/S4","http://example.org/followerCount","http://example.org/104"),
-										new TestRDFTupleResults("http://example.org/S3","http://example.org/followerCount","http://example.org/103")
+										new TestRDFTupleResults("http://example.org/S1_4","http://example.org/followerCount","http://example.org/k"),
+										new TestRDFTupleResults("http://example.org/S1_3","http://example.org/followerCount","http://example.org/k")
 										))))
 					},{
 						new long[]{600, 1000, 1340, 2000, 2020, 3000, 3001}, 
 						1, 1, new ArrayList(Arrays.asList(
 								new ArrayList(Arrays.asList(
-										new TestRDFTupleResults("http://example.org/S1","http://example.org/followerCount","http://example.org/101"))),
+										new TestRDFTupleResults("http://example.org/S1_1","http://example.org/followerCount","http://example.org/101_1"))),
 								new ArrayList(Arrays.asList(
-										new TestRDFTupleResults("http://example.org/S2","http://example.org/followerCount","http://example.org/102"),
-										new TestRDFTupleResults("http://example.org/S3","http://example.org/followerCount","http://example.org/103"))),
+										new TestRDFTupleResults("http://example.org/S1_3","http://example.org/followerCount","http://example.org/103_1"),
+										new TestRDFTupleResults("http://example.org/S1_2","http://example.org/followerCount","http://example.org/102_1"))),
 								new ArrayList(Arrays.asList(
-										new TestRDFTupleResults("http://example.org/S5","http://example.org/followerCount","http://example.org/105"),
-										new TestRDFTupleResults("http://example.org/S4","http://example.org/followerCount","http://example.org/104")
+										new TestRDFTupleResults("http://example.org/S1_4","http://example.org/followerCount","http://example.org/104_1"),
+										new TestRDFTupleResults("http://example.org/S1_5","http://example.org/followerCount","http://example.org/105_1")
 										))))
 					}
 				});
 	}
 
 
-	@Test public void shouldMatchQueryResult(){
+	@Test public void shouldMatchQueryResultUsingOneFusekiServer(){
 		String queryGetAll = "REGISTER QUERY PIPPO AS SELECT ?S ?P2 ?O2 FROM STREAM <http://myexample.org/stream> [RANGE "+width+"s STEP "+slide+"s]"
-				+ "  WHERE { ?S ?P ?O SERVICE <http://localhost:3031/test/sparql> {?S ?P2 ?O2}"
+				+ "  WHERE { ?S ?P ?O SERVICE <http://localhost:3031/test1/sparql> {?S ?P2 ?O2}"
 				+ "}";
 		System.out.println(queryGetAll);
 
 		engine.registerStream(streamGenerator);
 		CsparqlQueryResultProxy c1 = null;
-		changeFusekiContent();
 		try {
 			c1 = engine.registerQuery(queryGetAll, false);
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
-
+		
 		ResultTable formatter = new ResultTable();
 		c1.addObserver(formatter);
 		streamGenerator.run();
 		List<List<RDFTuple>> actual = formatter.getResults();
+		changeFusekisContent(); 
+		//if we change the fuseki content here for the next testcase it will be caching the changed content and the expected results will be different for the second test case
 		
-		/*System.out.println(actual);
-		System.out.println(">>>.."+expected);*/
+		System.out.println(actual);
+		System.out.println(">>>.."+expected);
 		for(int i = 0; i<actual.size(); i++)
 		{
 			List<RDFTuple> tempA=actual.get(i);
@@ -193,23 +203,15 @@ public class CacheTests {
 
 
 	//for manual checking purposes
-	public static void main2(String[] args) {
-		Graph g = new GraphMem();
-		for (int k=0;k<50;k++){
-			g.add(new Triple(
-					NodeFactory.createURI("http://example.org/S"+k), 
-					NodeFactory.createURI("http://example.org/followerCount"), 
-					NodeFactory.createURI("http://example.org/k")));
-		}
-		EmbeddedFusekiServer fuseki = EmbeddedFusekiServer.create(3031, DatasetGraphFactory.create(g), "test"); 
-
-		fuseki.start();
-
-
+	public static void /*FusekiOneInstance*/main2(String[] args) {
+		
+		startupFuseki();
+		changeFusekisContent();
 		String query = 
-				"SELECT ?S ?P2 ?O2 "
+				"SELECT ?S1 ?S2 ?P1 ?P2 ?O1 ?O2 "
 						+ "WHERE { "
-						+"SERVICE <http://localhost:3031/test/sparql> {?S ?P2 ?O2}"
+						+"SERVICE <http://localhost:3031/test1/sparql> {?S1 ?P1 ?O1}"
+						+"SERVICE <http://localhost:3032/test2/sparql> {?S2 ?P2 ?O2}"
 						+ "}";
 
 		QueryExecution qe = QueryExecutionFactory.create(query, ModelFactory.createDefaultModel());
@@ -219,41 +221,120 @@ public class CacheTests {
 			System.out.println(rs.next());
 		}
 
-		fuseki.stop();
+		shutdownFuseki();
 	}
-	public static void main(String[] args) {
+	@Test public void mainTestsMultipleCachesForOneStream() {//
 		
-		Graph g = new GraphMem();
-		for (int k=0;k<3;k++){
-			g.add(new Triple(
-					NodeFactory.createURI("http://example.org/S"+k), 
-					NodeFactory.createURI("http://example.org/followerCount"), 
-					NodeFactory.createURI("http://example.org/k"+k)));
-		}
-		EmbeddedFusekiServer fuseki = EmbeddedFusekiServer.create(3031, DatasetGraphFactory.create(g), "test"); 
-		accessor = DatasetAccessorFactory.createHTTP("http://localhost:3031/test/data");
-		fuseki.start();	
-
+		//startupFuseki();
+		changeFusekisContent();
 		CsparqlEngine engine = new CsparqlEngineImpl();
 		engine.initialize();
 
-		TestGeneratorFromInput streamGenerator = new TestGeneratorFromInput("http://myexample.org/stream", 
-				new long[]{600, 1000, 1340, 2000, 2020, 3000, 3001});
+		TestGeneratorFromInput streamGenerator1 = new TestGeneratorFromInput("http://myexample.org/stream1", 
+				new long[]{600, 1000, 1340, 2000, 2020, 3000, 3001, 3020, 3200, 3500, 4000, 4600, 5000});
+		
+		String queryGetAll1 = 
+				"REGISTER QUERY PIPPO AS SELECT ?S ?P2 ?O2 FROM STREAM <http://myexample.org/stream1> "
+						+ "[RANGE 1s STEP 1s]  "
+						+ "WHERE { ?S <http://example.org/like> ?O "
+						+"SERVICE <http://localhost:3031/test1/sparql> {?S ?P2 ?O2}"
+						+ "}";
+		String queryGetAll2 = 
+				"REGISTER QUERY PIPPO AS SELECT ?S1 ?P3 ?O3 FROM STREAM <http://myexample.org/stream1> "
+						+ "[RANGE 1s STEP 1s]  "
+						+ "WHERE { ?S1 <http://example.org/mentioned> ?O "
+						+"SERVICE <http://localhost:3032/test2/sparql> {?S1 ?P3 ?O3}"
+						+ "}";
+		//				"REGISTER QUERY PIPPO AS SELECT ?O FROM STREAM <http://myexample.org/stream> [RANGE 4s STEP 4s]  WHERE { ?S ?P ?O } ORDER BY ?O";
 
-		String queryGetAll = 
-				"REGISTER QUERY PIPPO AS SELECT ?S ?P2 ?O2 FROM STREAM <http://myexample.org/stream> "
+		//		TestGeneratorFromFile tg = new TestGeneratorFromFile("http://myexample.org/stream", "src/test/resources/sample_input.txt");
+		engine.registerStream(streamGenerator1);
+		CsparqlQueryResultProxy c1 = null;
+		CsparqlQueryResultProxy c2 = null;
+		
+		try {
+			c1 = engine.registerQuery(queryGetAll1, false);
+			//cache will be filled and queried with these vars ?s ?P2 ?o2 form server "localhost:3031/test1" for query queryGetAll1
+			c2 = engine.registerQuery(queryGetAll2, false);
+			//cache will be filled and queried with these vars ?S1 ?P3 ?O3 form server "localhost:3032/test2" for query queryGetAll2			
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		/*c1.addObserver(new ResultFormatter() {	
+			@Override
+			public void update(Observable o, Object arg) {
+				for(Iterator<RDFTuple> it = ((RDFTable)arg).getTuples().iterator();it.hasNext();){
+					RDFTuple tuple = it.next();
+					System.out.println(tuple);
+				}
+				System.out.println();
+			}
+		});
+		c2.addObserver(new ResultFormatter() {	
+			@Override
+			public void update(Observable o, Object arg) {
+				for(Iterator<RDFTuple> it = ((RDFTable)arg).getTuples().iterator();it.hasNext();){
+					RDFTuple tuple = it.next();
+					System.out.println(tuple);
+				}
+				System.out.println();
+			}
+		});*/
+		ResultTable formatter1 = new ResultTable();
+		c1.addObserver(formatter1);
+		c2.addObserver(formatter1);
+		streamGenerator1.run();//stream generator will start to produce triples that are of intereste for both queryGetAll1 and queryGetAll2
+		//each will attract their relevant data from stream and process query over it
+		List<List<RDFTuple>> actual1 = formatter1.getResults();
+		changeFusekisContent(); 
+		//if we change the fuseki content here for the next testcase it will be caching the changed content and the expected results will be different for the second test case
+		System.out.println("output >>>>>>> "+actual1);
+		/*for(int i = 0; i<actual1.size(); i++)
+		{
+			List<RDFTuple> tempA=actual1.get(i);
+			List<TestRDFTupleResults> tempE=expected.get(i);
+			for(int j=0;j<tempA.size();j++)
+				assertEquals(tempE.get(j), tempA.get(j));
+		}*/
+		//shutdownFuseki();
+
+	}
+	public static void main(String[] args) {//TestsMultipleCachesFormultipleStreams
+		
+		startupFuseki();
+		CsparqlEngine engine = new CsparqlEngineImpl();
+		engine.initialize();
+		TestGeneratorFromInput[] streams=new TestGeneratorFromInput[3];
+		streams[0] = new TestGeneratorFromInput("http://myexample.org/stream1", 
+				new long[]{600, 1000, 1340, 2000, 2020, 3000, 3001});
+		streams[1] = new TestGeneratorFromInput("http://myexample.org/stream2", 
+				new long[]{600, 1000, 1340, 2000, 2020, 3000, 3001});
+		
+		streams[2] = new TestGeneratorFromInput("http://myexample.org/stream3", 
+				new long[]{600, 1000, 1340, 2000, 2020, 3000, 3001});
+		
+		MultiStreamGeneratorFromInput streamGenerator = new MultiStreamGeneratorFromInput(streams);
+		
+		String queryGetAll1 = 
+				"REGISTER QUERY PIPPO AS SELECT ?S ?P2 ?O2 FROM STREAM <http://myexample.org/stream1> "
 						+ "[RANGE 1s STEP 1s]  "
 						+ "WHERE { ?S ?P ?O "
-						+"SERVICE <http://localhost:3031/test/sparql> {?S ?P2 ?O2}"
+						+"SERVICE <http://localhost:3031/test1/sparql> {?S ?P2 ?O2}"
+						+ "}";
+		String queryGetAll2 = 
+				"REGISTER QUERY PIPPO AS SELECT ?S1 ?P3 ?O3 FROM STREAM <http://myexample.org/stream2> "
+						+ "[RANGE 1s STEP 1s]  "
+						+ "WHERE { ?S1 ?P ?O "
+						+"SERVICE <http://localhost:3031/test2/sparql> {?S1 ?P3 ?O3}"
 						+ "}";
 		//				"REGISTER QUERY PIPPO AS SELECT ?O FROM STREAM <http://myexample.org/stream> [RANGE 4s STEP 4s]  WHERE { ?S ?P ?O } ORDER BY ?O";
 
 		//		TestGeneratorFromFile tg = new TestGeneratorFromFile("http://myexample.org/stream", "src/test/resources/sample_input.txt");
 		engine.registerStream(streamGenerator);
 		CsparqlQueryResultProxy c1 = null;
-
+		
 		try {
-			c1 = engine.registerQuery(queryGetAll, false);
+			c1 = engine.registerQuery(queryGetAll1, false);
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
@@ -267,23 +348,26 @@ public class CacheTests {
 				System.out.println();
 			}
 		});
-		changeFusekiContent();
+		
+		
+		changeFusekisContent();
 		streamGenerator.run();
-
-		fuseki.stop();
+		
+		shutdownFuseki();
 
 	}
-
-	private static void changeFusekiContent() {
-		accessor.getModel().removeAll();
-		Graph g2 = new GraphMem();
-		for (int k=0;k<50;k++){
-			g2.add(new Triple(
-					NodeFactory.createURI("http://example.org/S"+k), 
-					NodeFactory.createURI("http://example.org/followerCount"), 
-					NodeFactory.createURI("http://example.org/"+(k+100))));
+	private static void changeFusekisContent() {
+		for(int y=0;y<numberOfInstances;y++){
+			accessor[y].getModel().removeAll();
+			Graph g2 = new GraphMem();
+			for (int k=0;k<20;k++){
+				g2.add(new Triple(
+						NodeFactory.createURI("http://example.org/S"+(y+1)+"_"+k), 
+						NodeFactory.createURI("http://example.org/followerCount"), 
+						NodeFactory.createURI("http://example.org/"+(k*numberOfFusekiChange+100)+"_"+(y+1))));
+			}
+			accessor[y].putModel(ModelFactory.createModelForGraph(g2));		
 		}
-		accessor.putModel(ModelFactory.createModelForGraph(g2));		
+		numberOfFusekiChange++;
 	}
-
 }

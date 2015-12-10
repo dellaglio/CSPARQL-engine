@@ -8,6 +8,7 @@ import java.util.Set;
 
 import org.apache.jena.atlas.io.IndentedWriter;
 
+import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
@@ -26,6 +27,8 @@ import com.hp.hpl.jena.sparql.algebra.op.OpService;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.engine.QueryIterator;
 import com.hp.hpl.jena.sparql.engine.binding.Binding;
+import com.hp.hpl.jena.sparql.engine.binding.BindingFactory;
+import com.hp.hpl.jena.sparql.engine.binding.BindingMap;
 import com.hp.hpl.jena.vocabulary.RDF;
 
 public class QueryRunner {
@@ -36,15 +39,16 @@ public class QueryRunner {
 	private Op optimizedQuery;
 	private List<OpService> serviceList;
 	private int serviceCount;
+	
 	public QueryRunner(String queryString, Model localData){
 		query = QueryFactory.create(queryString);
 		model = localData;
 		parsedQuery = Algebra.compile(query);
-		System.out.println("Query (compiled):");
-		parsedQuery.output(IndentedWriter.stdout);
+		/*System.out.println("Query (compiled):");
+		parsedQuery.output(IndentedWriter.stdout);*/
 		optimizedQuery = Algebra.optimize(parsedQuery);
-		System.out.println("Query (optimized):");
-		optimizedQuery.output(IndentedWriter.stdout);
+		/*System.out.println("Query (optimized):");
+		optimizedQuery.output(IndentedWriter.stdout);*/
 		serviceCount= extractServiceClauses();//serviceLsit is initialized and filled in this function based on parsedQuery
 
 	}
@@ -218,6 +222,7 @@ public class QueryRunner {
 		return returnList;
 	}
 
+	
 	public int extractServiceClauses() {
 		serviceList=new ArrayList<>();
 		//removes the SERVICES clauses from original query and put it in os
@@ -300,5 +305,27 @@ public class QueryRunner {
 	public List<OpService> getSERVICEEndpointURI() {
 		// TODO Auto-generated method stub
 		return serviceList;
+	}
+
+	public Binding getKeyBinding(Binding outerBinding) {
+		Iterator<Var> keyIt = computeCacheKeyVars().iterator();
+		BindingMap keyBm = BindingFactory.create();
+		while(keyIt.hasNext()){
+			Var TempKey=keyIt.next();
+			Node tempValue = outerBinding.get(TempKey);
+			keyBm.add(TempKey, tempValue);
+		}
+		return keyBm;		
+	}
+
+	public Binding getValueBinding(Binding solb) {
+		Iterator<Var> valueIt = computeCacheValueVars().iterator();
+		BindingMap valueBm = BindingFactory.create();
+		while(valueIt.hasNext()){
+			Var TempKey=valueIt.next();
+			Node tempValue = solb.get(TempKey);
+			valueBm.add(TempKey, tempValue);
+		}
+		return valueBm;
 	}
 }

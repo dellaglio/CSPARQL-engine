@@ -41,6 +41,7 @@ import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.*;
 
+import eu.larkc.csparql.cep.api.TestGeneratorFromInput;
 import eu.larkc.csparql.common.RDFTable;
 import eu.larkc.csparql.common.RDFTuple;
 import eu.larkc.csparql.common.config.Config;
@@ -49,7 +50,6 @@ import eu.larkc.csparql.core.engine.CsparqlEngine;
 import eu.larkc.csparql.core.engine.CsparqlEngineImpl;
 import eu.larkc.csparql.core.engine.CsparqlQueryResultProxy;
 import eu.larkc.csparql.utils.Counter;
-import eu.larkc.csparql.utils.TestGeneratorFromInput;
 
 @RunWith(Parameterized.class)
 public class ExternalTimestampTests {

@@ -4,6 +4,7 @@ import com.hp.hpl.jena.sparql.algebra.op.OpService;
 import com.hp.hpl.jena.sparql.engine.ExecutionContext;
 import com.hp.hpl.jena.sparql.engine.QueryIterator;
 import com.hp.hpl.jena.sparql.engine.main.OpExecutor;
+import com.hp.hpl.jena.sparql.util.Symbol;
 
 public class OpExecutorAcqua extends OpExecutor {
 
@@ -15,7 +16,7 @@ public class OpExecutorAcqua extends OpExecutor {
 
 	@Override
 	protected QueryIterator execute(OpService opService, QueryIterator input) {
-		System.out.println("Catched!");
+		System.out.println("window triggered for "+execCxt.getContext().getAsString(Symbol.create("http://jena.hpl.hp.com/ARQ/system#query")));
 		return new QueryIterServiceCache(input, opService, execCxt) ;
     }
 }

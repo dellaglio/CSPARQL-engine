@@ -71,6 +71,7 @@ import com.hp.hpl.jena.reasoner.rulesys.RDFSRuleReasonerFactory;
 import com.hp.hpl.jena.reasoner.rulesys.Rule;
 import com.hp.hpl.jena.sparql.engine.main.QC;
 import com.hp.hpl.jena.sparql.function.FunctionRegistry;
+import com.hp.hpl.jena.sparql.util.Symbol;
 import com.hp.hpl.jena.vocabulary.ReasonerVocabulary;
 
 import eu.larkc.csparql.common.RDFTable;
@@ -204,6 +205,11 @@ public class JenaEngine implements SparqlEngine {
 		} else {
 			qexec = QueryExecutionFactory.create(q, model);
 		}
+		
+		//adding QueryRunner to context to reterive it in the itrator for determining key.value vars in the cache
+		QueryRunner qr=new QueryRunner(q.toString(), this.model);
+		qexec.getContext().put(Symbol.create("acqua:runner"), qr);
+		
 		
 		//		if(activateInference){
 		//			

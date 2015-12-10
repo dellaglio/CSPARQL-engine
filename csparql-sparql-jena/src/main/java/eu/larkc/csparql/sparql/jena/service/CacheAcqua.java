@@ -26,11 +26,15 @@ import com.hp.hpl.jena.sparql.engine.binding.BindingUtils;
 
 //possible K: Binding, long
 //possible V: Binding, Set<Binding>, List<Binding>, ???
-
+//if we only have one instance of a cacheLRU then for multiple queries, later query will override key Vars and value Vars of the previous query
+//and also cache entries have inconsistent key and value vars.
+//to retrive values from cache
+//therefore one solution for each cache entry we should specify the corresponding key and value vars.
+//
 public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 
 	public static final CacheAcqua INSTANCE = new CacheAcqua();
-	public static int cacheSize=3;
+	public static final int cacheSize=50;
 
 	private List<Var> keys; 
 	private List<Var> values;
@@ -42,7 +46,7 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 	}
 	
 	public CacheAcqua(){
-		super(0.8f, 3);
+		super(0.8f, cacheSize);
 
 	}
 	
@@ -67,19 +71,21 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 		for(int i=0;i<qr.extractServiceClauses();i++){
 			OpService opService=qr.getSERVICEEndpointURI().get(i);
 			Node endpoint = opService.getService();
+			//System.out.println("endpoint>>>>>>>"+endpoint.toString()+opService);
 			Query query = OpAsQuery.asQuery(opService.getSubOp());
 			QueryExecution qe = QueryExecutionFactory.sparqlService(
 					endpoint.getURI(), query);
 			ResultSet rs = qe.execSelect();	
 			while (rs.hasNext() && super.size()!=cacheSize) {
-				System.out.println(">>>>>>>"+super.size());
 				QuerySolution qs = rs.next();//nextSolution();
 				BindingProjectNamed solb = (BindingProjectNamed) BindingUtils
 						.asBinding(qs);
-				put(solb);
-				printContent();
-			}		
+				System.out.println("put in cache>>>>>>>"+solb);
+				put(qr.getKeyBinding(solb),qr.getValueBinding(solb));
+				//printContent();
+			}				
 		}	
+			
 	}
 
 	public List<Var> getKeyVars(){
@@ -123,7 +129,11 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 	public Set<Binding> put(Binding key, Set<Binding> value){
 		return super.put(key, value);
 	}
-	
+	public Set<Binding> put(Binding key, Binding value){
+		HashSet<Binding> v=new HashSet<Binding>();
+		v.add(value);
+		return super.put(key, v);
+	}
 	public Set<Binding> put(Binding b){
 		Binding keyBm = getKeyBinding(b);
 		Binding valueBm = getValueBinding(b);
@@ -143,7 +153,8 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 		System.out.println("START PRINTING CACHE CONTENT");
 		Iterator<Binding> it = super.keys();
         while(it.hasNext()){
-        	System.out.println(it.next());
+        	Binding temp = it.next();
+        	System.out.println(temp+" "+super.get(temp));
         }
         System.out.println("END PRINTING CACHE CONTENT");
 		

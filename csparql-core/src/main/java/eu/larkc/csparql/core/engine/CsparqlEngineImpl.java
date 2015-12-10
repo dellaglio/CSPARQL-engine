@@ -45,6 +45,7 @@ import com.hp.hpl.jena.reasoner.rulesys.Rule;
 import com.hp.hpl.jena.vocabulary.ReasonerVocabulary;
 
 import eu.larkc.csparql.cep.api.CepEngine;
+import eu.larkc.csparql.cep.api.MultiStreamGeneratorFromInput;
 import eu.larkc.csparql.cep.api.RdfQuadruple;
 import eu.larkc.csparql.cep.api.RdfSnapshot;
 import eu.larkc.csparql.cep.api.RdfStream;
@@ -236,6 +237,12 @@ public class CsparqlEngineImpl implements Observer, CsparqlEngine {
 	}
 
 	public RdfStream registerStream(final RdfStream s) {
+		if(s.getClass().getSimpleName().equalsIgnoreCase("MultiStreamGeneratorFromInput")){
+			for(RdfStream rs : ((MultiStreamGeneratorFromInput)s).getStreams()){
+				this.streams.put(rs.getIRI(), rs);
+				this.cepEngine.registerStream(rs);
+			}
+		}
 		this.streams.put(s.getIRI(), s);
 		this.cepEngine.registerStream(s);
 		return s;
