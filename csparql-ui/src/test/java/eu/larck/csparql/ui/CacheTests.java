@@ -42,8 +42,10 @@ import eu.larkc.csparql.core.engine.CsparqlEngine;
 import eu.larkc.csparql.core.engine.CsparqlEngineImpl;
 import eu.larkc.csparql.core.engine.CsparqlQueryResultProxy;
 import eu.larkc.csparql.utils.ResultTable;
-
-
+/*
+ * this class is intended to test cache for situations that we have one query with one service
+ * 
+ */
 @RunWith(Parameterized.class)
 public class CacheTests {
 	public static class TestRDFTupleResults extends RDFTuple{
@@ -65,8 +67,8 @@ public class CacheTests {
 			}
 		}
 	}
-	private static int numberOfInstances=2;
-	private static int numberOfFusekiChange=1;//keep track of the object values for testing
+	private static int numberOfInstances=1;//number of remote service providers 
+	private static int numberOfFusekiChange=1;//this is intended to keep track of the object values for testing
 	private static EmbeddedFusekiServer[] fuseki=new EmbeddedFusekiServer[numberOfInstances];
 	private static DatasetAccessor[] accessor=new DatasetAccessor[numberOfInstances];
 	private CsparqlEngine engine;
@@ -74,7 +76,7 @@ public class CacheTests {
 
 
 	@BeforeClass public static void startupFuseki(){
-		//we attend Y+1 to the end of subject and object to reveal the fuseki instance that it hosting them for testing purposes
+		//we attach Y+1 to the end of subject and object to reveal the fuseki instance that it hosting them for testing purposes
 		//to make sure that cache didn't mixup cache content of 2 queries
 		for(int y=0;y<numberOfInstances;y++){
 			Graph g = new GraphMem();
@@ -121,10 +123,8 @@ public class CacheTests {
 
 	private long[] input;
 	private int width, slide;
-	private List<List<TestRDFTupleResults>> expected;//each evaluation results to alist of RDFTuple
-	//if we have many queries the expected should be a List of List Of List of RDFTuples--> each query each evaluation resulted in a list of RDFTuple
-	//and also the input should be list of long[] if we have multiple streams
-
+	private List<List<TestRDFTupleResults>> expected;//each evaluation results a list of RDFTuple
+	
 	public CacheTests(long[] input, int width, int slide, List<List<TestRDFTupleResults>> expected){
 		this.input = input;
 		this.width = width;
@@ -167,7 +167,7 @@ public class CacheTests {
 	}
 
 
-	@Test public void shouldMatchQueryResultUsingOneFusekiServer(){
+	@Test public void shouldMatchQueryResultUsingOneQueryOneSERVICEoneStream(){
 		String queryGetAll = "REGISTER QUERY PIPPO AS SELECT ?S ?P2 ?O2 FROM STREAM <http://myexample.org/stream> [RANGE "+width+"s STEP "+slide+"s]"
 				+ "  WHERE { ?S ?P ?O SERVICE <http://localhost:3031/test1/sparql> {?S ?P2 ?O2}"
 				+ "}";
@@ -201,161 +201,7 @@ public class CacheTests {
 
 
 
-
-	//for manual checking purposes
-	public static void /*FusekiOneInstance*/main2(String[] args) {
-		
-		startupFuseki();
-		changeFusekisContent();
-		String query = 
-				"SELECT ?S1 ?S2 ?P1 ?P2 ?O1 ?O2 "
-						+ "WHERE { "
-						+"SERVICE <http://localhost:3031/test1/sparql> {?S1 ?P1 ?O1}"
-						+"SERVICE <http://localhost:3032/test2/sparql> {?S2 ?P2 ?O2}"
-						+ "}";
-
-		QueryExecution qe = QueryExecutionFactory.create(query, ModelFactory.createDefaultModel());
-		ResultSet rs = qe.execSelect();
-
-		while(rs.hasNext()){
-			System.out.println(rs.next());
-		}
-
-		shutdownFuseki();
-	}
-	@Test public void mainTestsMultipleCachesForOneStream() {//
-		
-		//startupFuseki();
-		changeFusekisContent();
-		CsparqlEngine engine = new CsparqlEngineImpl();
-		engine.initialize();
-
-		TestGeneratorFromInput streamGenerator1 = new TestGeneratorFromInput("http://myexample.org/stream1", 
-				new long[]{600, 1000, 1340, 2000, 2020, 3000, 3001, 3020, 3200, 3500, 4000, 4600, 5000});
-		
-		String queryGetAll1 = 
-				"REGISTER QUERY PIPPO AS SELECT ?S ?P2 ?O2 FROM STREAM <http://myexample.org/stream1> "
-						+ "[RANGE 1s STEP 1s]  "
-						+ "WHERE { ?S <http://example.org/like> ?O "
-						+"SERVICE <http://localhost:3031/test1/sparql> {?S ?P2 ?O2}"
-						+ "}";
-		String queryGetAll2 = 
-				"REGISTER QUERY PIPPO AS SELECT ?S1 ?P3 ?O3 FROM STREAM <http://myexample.org/stream1> "
-						+ "[RANGE 1s STEP 1s]  "
-						+ "WHERE { ?S1 <http://example.org/mentioned> ?O "
-						+"SERVICE <http://localhost:3032/test2/sparql> {?S1 ?P3 ?O3}"
-						+ "}";
-		//				"REGISTER QUERY PIPPO AS SELECT ?O FROM STREAM <http://myexample.org/stream> [RANGE 4s STEP 4s]  WHERE { ?S ?P ?O } ORDER BY ?O";
-
-		//		TestGeneratorFromFile tg = new TestGeneratorFromFile("http://myexample.org/stream", "src/test/resources/sample_input.txt");
-		engine.registerStream(streamGenerator1);
-		CsparqlQueryResultProxy c1 = null;
-		CsparqlQueryResultProxy c2 = null;
-		
-		try {
-			c1 = engine.registerQuery(queryGetAll1, false);
-			//cache will be filled and queried with these vars ?s ?P2 ?o2 form server "localhost:3031/test1" for query queryGetAll1
-			c2 = engine.registerQuery(queryGetAll2, false);
-			//cache will be filled and queried with these vars ?S1 ?P3 ?O3 form server "localhost:3032/test2" for query queryGetAll2			
-		} catch (ParseException e) {
-			e.printStackTrace();
-		}
-		/*c1.addObserver(new ResultFormatter() {	
-			@Override
-			public void update(Observable o, Object arg) {
-				for(Iterator<RDFTuple> it = ((RDFTable)arg).getTuples().iterator();it.hasNext();){
-					RDFTuple tuple = it.next();
-					System.out.println(tuple);
-				}
-				System.out.println();
-			}
-		});
-		c2.addObserver(new ResultFormatter() {	
-			@Override
-			public void update(Observable o, Object arg) {
-				for(Iterator<RDFTuple> it = ((RDFTable)arg).getTuples().iterator();it.hasNext();){
-					RDFTuple tuple = it.next();
-					System.out.println(tuple);
-				}
-				System.out.println();
-			}
-		});*/
-		ResultTable formatter1 = new ResultTable();
-		c1.addObserver(formatter1);
-		c2.addObserver(formatter1);
-		streamGenerator1.run();//stream generator will start to produce triples that are of intereste for both queryGetAll1 and queryGetAll2
-		//each will attract their relevant data from stream and process query over it
-		List<List<RDFTuple>> actual1 = formatter1.getResults();
-		changeFusekisContent(); 
-		//if we change the fuseki content here for the next testcase it will be caching the changed content and the expected results will be different for the second test case
-		System.out.println("output >>>>>>> "+actual1);
-		/*for(int i = 0; i<actual1.size(); i++)
-		{
-			List<RDFTuple> tempA=actual1.get(i);
-			List<TestRDFTupleResults> tempE=expected.get(i);
-			for(int j=0;j<tempA.size();j++)
-				assertEquals(tempE.get(j), tempA.get(j));
-		}*/
-		//shutdownFuseki();
-
-	}
-	public static void main(String[] args) {//TestsMultipleCachesFormultipleStreams
-		
-		startupFuseki();
-		CsparqlEngine engine = new CsparqlEngineImpl();
-		engine.initialize();
-		TestGeneratorFromInput[] streams=new TestGeneratorFromInput[3];
-		streams[0] = new TestGeneratorFromInput("http://myexample.org/stream1", 
-				new long[]{600, 1000, 1340, 2000, 2020, 3000, 3001});
-		streams[1] = new TestGeneratorFromInput("http://myexample.org/stream2", 
-				new long[]{600, 1000, 1340, 2000, 2020, 3000, 3001});
-		
-		streams[2] = new TestGeneratorFromInput("http://myexample.org/stream3", 
-				new long[]{600, 1000, 1340, 2000, 2020, 3000, 3001});
-		
-		MultiStreamGeneratorFromInput streamGenerator = new MultiStreamGeneratorFromInput(streams);
-		
-		String queryGetAll1 = 
-				"REGISTER QUERY PIPPO AS SELECT ?S ?P2 ?O2 FROM STREAM <http://myexample.org/stream1> "
-						+ "[RANGE 1s STEP 1s]  "
-						+ "WHERE { ?S ?P ?O "
-						+"SERVICE <http://localhost:3031/test1/sparql> {?S ?P2 ?O2}"
-						+ "}";
-		String queryGetAll2 = 
-				"REGISTER QUERY PIPPO AS SELECT ?S1 ?P3 ?O3 FROM STREAM <http://myexample.org/stream2> "
-						+ "[RANGE 1s STEP 1s]  "
-						+ "WHERE { ?S1 ?P ?O "
-						+"SERVICE <http://localhost:3031/test2/sparql> {?S1 ?P3 ?O3}"
-						+ "}";
-		//				"REGISTER QUERY PIPPO AS SELECT ?O FROM STREAM <http://myexample.org/stream> [RANGE 4s STEP 4s]  WHERE { ?S ?P ?O } ORDER BY ?O";
-
-		//		TestGeneratorFromFile tg = new TestGeneratorFromFile("http://myexample.org/stream", "src/test/resources/sample_input.txt");
-		engine.registerStream(streamGenerator);
-		CsparqlQueryResultProxy c1 = null;
-		
-		try {
-			c1 = engine.registerQuery(queryGetAll1, false);
-		} catch (ParseException e) {
-			e.printStackTrace();
-		}
-		c1.addObserver(new ResultFormatter() {	
-			@Override
-			public void update(Observable o, Object arg) {
-				for(Iterator<RDFTuple> it = ((RDFTable)arg).getTuples().iterator();it.hasNext();){
-					RDFTuple tuple = it.next();
-					System.out.println(tuple);
-				}
-				System.out.println();
-			}
-		});
-		
-		
-		changeFusekisContent();
-		streamGenerator.run();
-		
-		shutdownFuseki();
-
-	}
+	
 	private static void changeFusekisContent() {
 		for(int y=0;y<numberOfInstances;y++){
 			accessor[y].getModel().removeAll();
