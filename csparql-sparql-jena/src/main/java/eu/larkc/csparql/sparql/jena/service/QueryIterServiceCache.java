@@ -1,7 +1,5 @@
 package eu.larkc.csparql.sparql.jena.service;
 
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
 import com.hp.hpl.jena.sparql.algebra.Op;
@@ -10,7 +8,6 @@ import com.hp.hpl.jena.sparql.engine.ExecutionContext;
 import com.hp.hpl.jena.sparql.engine.QueryIterator;
 import com.hp.hpl.jena.sparql.engine.binding.Binding;
 import com.hp.hpl.jena.sparql.engine.http.Service;
-import com.hp.hpl.jena.sparql.engine.iterator.QueryIter;
 import com.hp.hpl.jena.sparql.engine.iterator.QueryIterCommonParent;
 import com.hp.hpl.jena.sparql.engine.iterator.QueryIterPlainWrapper;
 import com.hp.hpl.jena.sparql.engine.iterator.QueryIterRepeatApply;
@@ -18,25 +15,24 @@ import com.hp.hpl.jena.sparql.engine.main.QC;
 import com.hp.hpl.jena.sparql.util.Symbol;
 
 public class QueryIterServiceCache  extends QueryIterRepeatApply{
-	CacheAcqua jenaCache;
-	OpService opService ;
-	QueryRunner qr;
+	CacheAcqua serviceCache;
+	OpService opService;
+//	QueryRunner qr;
+	
 	public QueryIterServiceCache(QueryIterator input, OpService opService, ExecutionContext context)
 	{
 		super(input, context) ;
-		jenaCache = CacheAcqua.INSTANCE;
+//		jenaCache = CacheAcqua.INSTANCE;
+		serviceCache = ((OpServiceCache) opService).getCache();
 		this.opService = opService ;		
-		qr =(QueryRunner) context.getContext().get(Symbol.create("acqua:runner"));	
-		
+//		qr =(QueryRunner) context.getContext().get(Symbol.create("acqua:runner"));	
 	}
 
 
 	@Override
-	protected QueryIterator nextStage(Binding outerBinding)
-	{
-
+	protected QueryIterator nextStage(Binding outerBinding) {
 		Binding key = qr.getKeyBinding(outerBinding);
-		Set<Binding> tmp = jenaCache.get(key);
+		Set<Binding> tmp = serviceCache.get(key);
 		if(tmp==null){//if the key is not in cache we retrive it from remote and put it in the cache making sure that tmp is not null
 			System.out.println(key+" windows entry without matching entry in cache! fetching from service URL!");
 			Op op = QC.substitute(opService, outerBinding) ;
@@ -52,10 +48,10 @@ public class QueryIterServiceCache  extends QueryIterRepeatApply{
 	        while(qIter2.hasNext())
 	        {
 	        	Binding solb=qIter2.next();
-	        	jenaCache.put(qr.getKeyBinding(solb),qr.getValueBinding(solb));
+	        	serviceCache.put(qr.getKeyBinding(solb),qr.getValueBinding(solb));
 	        } 
 	        //jenaCache.printContent();
-	        tmp = jenaCache.get(key);
+	        tmp = serviceCache.get(key);
 		}else System.out.println(key+" windows entry with matching entry in cache!");
 		if (tmp==null) return null;
 		QueryIterator qIter = new QueryIterPlainWrapper(tmp.iterator());			

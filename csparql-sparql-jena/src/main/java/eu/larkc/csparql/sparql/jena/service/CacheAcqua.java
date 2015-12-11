@@ -33,8 +33,7 @@ import com.hp.hpl.jena.sparql.engine.binding.BindingUtils;
 //
 public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 
-	public static final CacheAcqua INSTANCE = new CacheAcqua();
-	public static final int cacheSize=50;
+//	private int cacheSize=50;
 
 	private List<Var> keys; 
 	private List<Var> values;
@@ -45,9 +44,9 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 		this.values = values;
 	}
 	
-	public CacheAcqua(){
+	public CacheAcqua(int cacheSize){
 		super(0.8f, cacheSize);
-
+//		this.cacheSize = cacheSize;
 	}
 	
 	public void init(QueryRunner qr) {
@@ -62,31 +61,30 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 
 		but it should be actually filled from 
 		remote data provider according to query*/ 	 
-		fillCache(qr);
-
+//		fillCache(qr);
 	}
 
-	private void fillCache(QueryRunner qr) {
-		
-		for(int i=0;i<qr.extractServiceClauses();i++){
-			OpService opService=qr.getSERVICEEndpointURI().get(i);
-			Node endpoint = opService.getService();
-			//System.out.println("endpoint>>>>>>>"+endpoint.toString()+opService);
-			Query query = OpAsQuery.asQuery(opService.getSubOp());
-			QueryExecution qe = QueryExecutionFactory.sparqlService(
-					endpoint.getURI(), query);
-			ResultSet rs = qe.execSelect();	
-			while (rs.hasNext() && super.size()!=cacheSize) {
-				QuerySolution qs = rs.next();//nextSolution();
-				BindingProjectNamed solb = (BindingProjectNamed) BindingUtils
-						.asBinding(qs);
-				System.out.println("put in cache>>>>>>>"+solb);
-				put(qr.getKeyBinding(solb),qr.getValueBinding(solb));
-				//printContent();
-			}				
-		}	
-			
-	}
+//	private void fillCache(QueryRunner qr) {
+//		
+//		for(int i=0;i<qr.extractServiceClauses();i++){
+//			OpService opService=qr.getSERVICEEndpointURI().get(i);
+//			Node endpoint = opService.getService();
+//			//System.out.println("endpoint>>>>>>>"+endpoint.toString()+opService);
+//			Query query = OpAsQuery.asQuery(opService.getSubOp());
+//			QueryExecution qe = QueryExecutionFactory.sparqlService(
+//					endpoint.getURI(), query);
+//			ResultSet rs = qe.execSelect();	
+//			while (rs.hasNext() && super.size()!=cacheSize) {
+//				QuerySolution qs = rs.next();//nextSolution();
+//				BindingProjectNamed solb = (BindingProjectNamed) BindingUtils
+//						.asBinding(qs);
+//				System.out.println("put in cache>>>>>>>"+solb);
+//				put(qr.getKeyBinding(solb),qr.getValueBinding(solb));
+//				//printContent();
+//			}				
+//		}	
+//			
+//	}
 
 	public List<Var> getKeyVars(){
 		return keys;
@@ -129,11 +127,13 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 	public Set<Binding> put(Binding key, Set<Binding> value){
 		return super.put(key, value);
 	}
+	
 	public Set<Binding> put(Binding key, Binding value){
 		HashSet<Binding> v=new HashSet<Binding>();
 		v.add(value);
 		return super.put(key, v);
 	}
+	
 	public Set<Binding> put(Binding b){
 		Binding keyBm = getKeyBinding(b);
 		Binding valueBm = getValueBinding(b);

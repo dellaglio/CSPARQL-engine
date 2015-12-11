@@ -39,8 +39,9 @@ public class QueryRunner {
 	private Op optimizedQuery;
 	private List<OpService> serviceList;
 	private int serviceCount;
-	List<Var> keys;
-	List<Var> values;
+	private List<Var> keys;
+	private List<Var> values;
+	
 	public QueryRunner(String queryString, Model localData){
 		query = QueryFactory.create(queryString);
 		model = localData;

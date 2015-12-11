@@ -32,8 +32,8 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.datatypes.TypeMapper;
+import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.ARQ;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;
@@ -69,8 +70,14 @@ import com.hp.hpl.jena.reasoner.Reasoner;
 import com.hp.hpl.jena.reasoner.rulesys.GenericRuleReasoner;
 import com.hp.hpl.jena.reasoner.rulesys.RDFSRuleReasonerFactory;
 import com.hp.hpl.jena.reasoner.rulesys.Rule;
+import com.hp.hpl.jena.sparql.algebra.Algebra;
+import com.hp.hpl.jena.sparql.engine.QueryIterator;
+import com.hp.hpl.jena.sparql.engine.ResultSetStream;
 import com.hp.hpl.jena.sparql.engine.main.QC;
 import com.hp.hpl.jena.sparql.function.FunctionRegistry;
+import com.hp.hpl.jena.sparql.graph.GraphFactory;
+import com.hp.hpl.jena.sparql.modify.TemplateLib;
+import com.hp.hpl.jena.sparql.util.ModelUtils;
 import com.hp.hpl.jena.sparql.util.Symbol;
 import com.hp.hpl.jena.vocabulary.ReasonerVocabulary;
 
@@ -87,7 +94,6 @@ import eu.larkc.csparql.sparql.jena.common.JenaReasonerWrapper;
 import eu.larkc.csparql.sparql.jena.data_source.JenaDatasource;
 import eu.larkc.csparql.sparql.jena.ext.Timestamps;
 import eu.larkc.csparql.sparql.jena.ext.timestamp;
-import eu.larkc.csparql.sparql.jena.service.CacheAcqua;
 import eu.larkc.csparql.sparql.jena.service.OpExecutorFactoryAcqua;
 import eu.larkc.csparql.sparql.jena.service.QueryRunner;
 
@@ -176,41 +182,143 @@ public class JenaEngine implements SparqlEngine {
 	}
 
 
-	public RDFTable evaluateQuery(final SparqlQuery query) {
+	public RDFTable evaluateQuery(final SparqlQuery q) {
 
 		long startTS = System.currentTimeMillis();
 		
-		final Query q; 
-		if(query instanceof JenaQuery)
-			q = ((JenaQuery)query).getQuery();
-		else
-			q = QueryFactory.create(query.getQueryCommand(), Syntax.syntaxSPARQL_11);
+		if(!(q instanceof JenaQuery))
+			throw new RuntimeException("The query is not of the expected type");
 		
-		for(String s: q.getGraphURIs()){
-			List<RDFTuple> list = jds.getNamedModel(s);
-			for(RDFTuple t : list)
-				addStatement(t.get(0), t.get(1), t.get(2));
-		}
+		JenaQuery query = (JenaQuery) q;
+		
+		//TODO: what is it for?
+//		for(String s: query.getGraphURIs()){
+//			List<RDFTuple> list = jds.getNamedModel(s);
+//			for(RDFTuple t : list)
+//				addStatement(t.get(0), t.get(1), t.get(2));
+//		}
 
-		QueryExecution qexec;
+		QueryIterator root;
 		
 		if(reasonerMap.containsKey(query.getId())){
 			if(reasonerMap.get(query.getId()).isActive()){
 				Reasoner reasoner = (Reasoner) reasonerMap.get(query.getId()).getReasoner();
-				InfModel infmodel = ModelFactory.createInfModel(reasoner, this.model);	
-				qexec = QueryExecutionFactory.create(q, infmodel);
+				InfModel infmodel = ModelFactory.createInfModel(reasoner, this.model);
+				
+				root = Algebra.exec(((JenaQuery)query).getRootOp(), infmodel);
+				
+//				qexec = QueryExecutionFactory.create(q, infmodel);
 			} else {
-				qexec = QueryExecutionFactory.create(q, model);
+				root = Algebra.exec(((JenaQuery)query).getRootOp(), model);
+//				qexec = QueryExecutionFactory.create(q, model);
 			}
 		} else {
-			qexec = QueryExecutionFactory.create(q, model);
+			root = Algebra.exec(((JenaQuery)query).getRootOp(), model);
+//			qexec = QueryExecutionFactory.create(q, model);
 		}
 		
+		
 		//adding QueryRunner to context to reterive it in the itrator for determining key.value vars in the cache
-		QueryRunner qr=new QueryRunner(q.toString(), this.model);
-		qexec.getContext().put(Symbol.create("acqua:runner"), qr);
+//		QueryRunner qr=new QueryRunner(q.toString(), this.model);
+//		qexec.getContext().put(Symbol.create("acqua:runner"), qr);
 		
-		
+		RDFTable table = null;
+
+		if (query.isSelectQuery()){
+//			final ResultSet resultSet = qexec.execSelect();//constructor of query IterService
+			final ResultSet resultSet = new ResultSetStream(query.getResultVars(), model, root) ;
+
+			table = new RDFTable(resultSet.getResultVars());
+
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+
+			ResultSetRewindable tempResultSet = ResultSetFactory.makeRewindable(resultSet);//next stage of queryIterService
+
+			ResultSetFormatter.outputAsJSON(bos, tempResultSet);
+			table.setJsonSerialization(bos.toString());
+
+			tempResultSet.reset();
+
+			for (; tempResultSet.hasNext();) {
+				final RDFTuple tuple = new RDFTuple();
+				QuerySolution soln = tempResultSet.nextSolution();
+
+				for (String s : table.getNames()) {
+					RDFNode n = soln.get(s);
+					if (n == null)
+						tuple.addFields("");
+					else
+						tuple.addFields(format(n));
+				}
+				table.add(tuple);
+			}
+		}
+		else if (query.isAskQuery())
+		{
+			table = new RDFTable("Answer");
+			final RDFTuple tuple = new RDFTuple();
+			tuple.addFields("" + root.hasNext());
+			table.add(tuple);
+		}
+		else if (query.isGraphQuery())
+		{
+			Model m = null;
+			if (query.isDescribeQuery())
+				throw new RuntimeException("Not implemented");
+//				m = qexec.execDescribe();
+			else{
+				Iterator<Triple> it = TemplateLib.calcTriples(query.getConstructTemplate().getTriples(), root);
+				m = GraphFactory.makeJenaDefaultModel();
+				while(it.hasNext()){
+					Statement stmt = ModelUtils.tripleToStatement(m, it.next());
+					if(stmt != null){
+						m.add(stmt);
+					}
+				}
+			}
+
+			table = new RDFTable("Subject", "Predicate", "Object");
+
+			StringWriter w = new StringWriter();
+			m.write(w,"RDF/JSON");
+			table.setJsonSerialization(w.toString());
+
+			StmtIterator it = m.listStatements();
+			while (it.hasNext())
+			{
+				final RDFTuple tuple = new RDFTuple();
+				Statement stm = it.next();
+				tuple.addFields(formatSubject(stm.getSubject()),formatPredicate(stm.getPredicate()), format(stm.getObject())); 
+				table.add(tuple);
+			}
+		}
+
+		//		jds.removeNamedModel("http://streamreasoning.org/" + query.getId() + "_" + actualTs);
+
+		long endTS = System.currentTimeMillis();
+
+		Object[] object = new Object[6];
+
+		object[0] = query.getId();
+		object[1] = (endTS - startTS);
+		object[2] = table.size();
+		object[3] = Memory.getTotalMemory();
+		object[4] = Memory.getFreeMemory();
+		object[5] = Memory.getMemoryUsage();
+
+		logger.debug("Information about execution of query {} \n Execution Time : {} \n Results Number : {} \n Total Memory : {} mb \n " +
+				"Free Memory : {} mb \n Memory Usage : {} mb", object);
+
+		//		System.out.println(endTS - startTS);
+		//		try {
+		//		    PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter("/Users/baldo/Desktop/queryExecutionTimeReasoning.csv", true)));
+		//		    out.println(System.currentTimeMillis() + "," + (endTS - startTS));
+		//		    out.close();
+		//		} catch (Exception e) {
+		//		}
+
+		return table;
+
 		//		if(activateInference){
 		//			
 		//			if(inferenceRulesFileSerialization == null || inferenceRulesFileSerialization.isEmpty()){
@@ -271,93 +379,6 @@ public class JenaEngine implements SparqlEngine {
 		//			qexec = QueryExecutionFactory.create(q, model);
 		//		}
 
-		RDFTable table = null;
-
-		if (q.isSelectType())
-		{
-			final ResultSet resultSet = qexec.execSelect();//constructor of query IterService
-
-			table = new RDFTable(resultSet.getResultVars());
-
-			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-
-			ResultSetRewindable tempResultSet = ResultSetFactory.makeRewindable(resultSet);//next stage of queryIterService
-
-			ResultSetFormatter.outputAsJSON(bos, tempResultSet);
-			table.setJsonSerialization(bos.toString());
-
-			tempResultSet.reset();
-
-			for (; tempResultSet.hasNext();) {
-				final RDFTuple tuple = new RDFTuple();
-				QuerySolution soln = tempResultSet.nextSolution();
-
-				for (String s : table.getNames()) {
-					RDFNode n = soln.get(s);
-					if (n == null)
-						tuple.addFields("");
-					else
-						tuple.addFields(format(n));
-				}
-				table.add(tuple);
-			}
-		}
-		else if (q.isAskType())
-		{
-			table = new RDFTable("Answer");
-			final RDFTuple tuple = new RDFTuple();
-			tuple.addFields("" + qexec.execAsk());
-			table.add(tuple);
-		}
-		else if (q.isDescribeType() || q.isConstructType())
-		{
-			Model m = null;
-			if (q.isDescribeType())
-				m = qexec.execDescribe();
-			else
-				m = qexec.execConstruct();
-
-			table = new RDFTable("Subject", "Predicate", "Object");
-
-			StringWriter w = new StringWriter();
-			m.write(w,"RDF/JSON");
-			table.setJsonSerialization(w.toString());
-
-			StmtIterator it = m.listStatements();
-			while (it.hasNext())
-			{
-				final RDFTuple tuple = new RDFTuple();
-				Statement stm = it.next();
-				tuple.addFields(formatSubject(stm.getSubject()),formatPredicate(stm.getPredicate()), format(stm.getObject())); 
-				table.add(tuple);
-			}
-		}
-
-		//		jds.removeNamedModel("http://streamreasoning.org/" + query.getId() + "_" + actualTs);
-
-		long endTS = System.currentTimeMillis();
-
-		Object[] object = new Object[6];
-
-		object[0] = query.getId();
-		object[1] = (endTS - startTS);
-		object[2] = table.size();
-		object[3] = Memory.getTotalMemory();
-		object[4] = Memory.getFreeMemory();
-		object[5] = Memory.getMemoryUsage();
-
-		logger.debug("Information about execution of query {} \n Execution Time : {} \n Results Number : {} \n Total Memory : {} mb \n " +
-				"Free Memory : {} mb \n Memory Usage : {} mb", object);
-
-		//		System.out.println(endTS - startTS);
-		//		try {
-		//		    PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter("/Users/baldo/Desktop/queryExecutionTimeReasoning.csv", true)));
-		//		    out.println(System.currentTimeMillis() + "," + (endTS - startTS));
-		//		    out.close();
-		//		} catch (Exception e) {
-		//		}
-
-		return table;
 	}
 
 	private String format(RDFNode n) {
@@ -564,15 +585,24 @@ public class JenaEngine implements SparqlEngine {
 
 	@Override
 	public void parseSparqlQuery(SparqlQuery query) throws ParseException {
+		//check if the query does use a graph or window that does not exist
 		Query spQuery = QueryFactory.create(query.getQueryCommand(), Syntax.syntaxSPARQL_11);
-		//FIXME: should not be a singleton
-		QueryRunner qr=new QueryRunner(spQuery.toString(), this.model);
-		CacheAcqua.INSTANCE.init(qr);//.computeCacheKeyVars(),qr.computeCacheValueVars());
-		
 		for(String s: spQuery.getGraphURIs()){
 			if(!jds.containsNamedModel(s))
 				throw new ParseException("The model in the FROM clause is missing in the internal dataset, please put the static model in the dataset using putStaticNamedModel(String iri, String location) method of the engine.", 0);
 		}
+		
+		//FIXME: can be removed?
+		//initialize the cache
+		if(Config.INSTANCE.isJenaUsingServiceCaching()){
+			//check if the query has services
+			
+			//if yes, replace OpService with OpServiceCache
+			
+			QueryRunner qr=new QueryRunner(spQuery.toString(), this.model);
+	//		CacheAcqua.INSTANCE.init(qr);//.computeCacheKeyVars(),qr.computeCacheValueVars());
+		}
+		
 
 	}
 }
