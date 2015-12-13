@@ -18,6 +18,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.reasoner.rulesys.builtins.Equal;
@@ -41,6 +43,7 @@ import eu.larkc.csparql.core.ResultFormatter;
 import eu.larkc.csparql.core.engine.CsparqlEngine;
 import eu.larkc.csparql.core.engine.CsparqlEngineImpl;
 import eu.larkc.csparql.core.engine.CsparqlQueryResultProxy;
+import eu.larkc.csparql.sparql.jena.service.OpServiceCache;
 import eu.larkc.csparql.utils.ResultTable;
 /*
  * this class is intended to test cache for situations that we have one query with one service
@@ -48,6 +51,8 @@ import eu.larkc.csparql.utils.ResultTable;
  */
 @RunWith(Parameterized.class)
 public class CacheTests {
+	private static Logger logger = LoggerFactory.getLogger(CacheTests.class);
+	
 	public static class TestRDFTupleResults extends RDFTuple{
 		public TestRDFTupleResults(String... values) {
 			super.addFields(values);
@@ -171,7 +176,7 @@ public class CacheTests {
 		String queryGetAll = "REGISTER QUERY PIPPO AS SELECT ?S ?P2 ?O2 FROM STREAM <http://myexample.org/stream> [RANGE "+width+"s STEP "+slide+"s]"
 				+ "  WHERE { ?S ?P ?O SERVICE <http://localhost:3031/test1/sparql> {?S ?P2 ?O2}"
 				+ "}";
-		System.out.println(queryGetAll);
+		logger.debug(queryGetAll);
 
 		engine.registerStream(streamGenerator);
 		CsparqlQueryResultProxy c1 = null;
@@ -188,8 +193,8 @@ public class CacheTests {
 		changeFusekisContent(); 
 		//if we change the fuseki content here for the next testcase it will be caching the changed content and the expected results will be different for the second test case
 		
-		System.out.println(actual);
-		System.out.println(">>>.."+expected);
+		logger.debug(actual.toString());
+		logger.debug(">>>.."+expected);
 		for(int i = 0; i<actual.size(); i++)
 		{
 			List<RDFTuple> tempA=actual.get(i);

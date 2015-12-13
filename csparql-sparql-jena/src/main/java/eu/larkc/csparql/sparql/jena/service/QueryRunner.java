@@ -39,8 +39,8 @@ public class QueryRunner {
 	private Op optimizedQuery;
 	private List<OpService> serviceList;
 	private int serviceCount;
-	private List<Var> keys;
-	private List<Var> values;
+	private Set<Var> keys;
+	private Set<Var> values;
 	
 	public QueryRunner(String queryString, Model localData){
 		query = QueryFactory.create(queryString);
@@ -56,8 +56,8 @@ public class QueryRunner {
 	}
 
 	private void distinctKeysValueVars() {
-		this.keys=new ArrayList();
-		this.values=new ArrayList();
+		this.keys=new HashSet<Var>();
+		this.values=new HashSet<Var>();
 		//common variables  among service and stream are key vars
 				final List<OpService> os = new ArrayList<OpService>();
 				//removes the SERVICES clauses from original query and put it in os
@@ -140,11 +140,11 @@ public class QueryRunner {
 		return query;
 	}
 	
-	public List<Var> computeCacheValueVars(){
+	public Set<Var> computeCacheValueVars(){
 		return this.values;
 	}
 
-	public List<Var> computeCacheKeyVars(){		
+	public Set<Var> computeCacheKeyVars(){		
 		return this.keys;
 	}
 

@@ -2,7 +2,12 @@ package eu.larkc.csparql.cep.api;
 
 import java.util.Random;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
 public class TestGeneratorFromInput extends RdfStream{
+	private static Logger logger = LoggerFactory.getLogger(TestGeneratorFromInput.class);
 	private long[] timestamps;
 
 	private final String subj = "http://example.org/S";
@@ -26,8 +31,9 @@ public class TestGeneratorFromInput extends RdfStream{
 			else*/
 			c=""+i;
 
-			RdfQuadruple tempQ = new RdfQuadruple(subj+((i%2)+1)+"_"+c, pred[i%2], obj+c, timestamp);
-			System.out.println("streamed>>> "+subj+((i%2)+1)+"_"+c+ pred[i%2]+ obj+c+ timestamp);
+			RdfQuadruple tempQ = new RdfQuadruple(subj+"1_"+c, pred[i%2], obj+c, timestamp);
+			logger.debug("streamed>>> "+subj+"1_"+c+ pred[i%2]+ obj+c+ timestamp);
+			//first index of subjects indicates the fuseki server number, so if we have only one service clause first index of subject is always 1
 			this.put(tempQ);
 			i++;
 		}		
@@ -44,7 +50,7 @@ public class TestGeneratorFromInput extends RdfStream{
 			c=""+i;
 
 			RdfQuadruple tempQ = new RdfQuadruple(subj+((i%2)+1)+"_"+c, pred[i%2], subj+(r.nextInt(2)+1)+"_"+c, timestamp);
-			System.out.println("streamed>>> "+subj+((i%2)+1)+"_"+c+ pred[i%2]+ "_"+subj+(r.nextInt(2)+1)+"_"+c+ timestamp);
+			logger.debug("streamed>>> "+subj+((i%2)+1)+"_"+c+ pred[i%2]+ "_"+subj+(r.nextInt(2)+1)+"_"+c+ timestamp);
 			this.put(tempQ);
 			i++;
 		}		

@@ -3,6 +3,9 @@ package eu.larkc.csparql.sparql.jena.service;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.hp.hpl.jena.sparql.algebra.Op;
 import com.hp.hpl.jena.sparql.algebra.op.OpService;
 import com.hp.hpl.jena.sparql.engine.ExecutionContext;
@@ -16,6 +19,7 @@ import com.hp.hpl.jena.sparql.engine.main.QC;
 import com.hp.hpl.jena.sparql.util.Symbol;
 
 public class QueryIterServiceCache  extends QueryIterRepeatApply{
+	private static Logger logger = LoggerFactory.getLogger(QueryIterServiceCache.class);
 	private CacheAcqua serviceCache;
 	private OpService opService;
 	
@@ -31,7 +35,7 @@ public class QueryIterServiceCache  extends QueryIterRepeatApply{
 		//check if the outerBinding hits the cache
 		Binding key = serviceCache.getKeyBinding(outerBinding);
 		if(!serviceCache.contains(key)){
-			System.out.println(key+" windows entry without matching entry in cache! fetching from service URL!");
+			logger.debug(key+" windows entry without matching entry in cache! fetching from service URL!");
 			Op op = QC.substitute(opService, outerBinding) ;
 	        QueryIterator qIter = Service.exec((OpService)op, getExecContext().getContext()) ;
 
@@ -40,8 +44,9 @@ public class QueryIterServiceCache  extends QueryIterRepeatApply{
 	        	Binding b = qIter.nextBinding();
 	        	values.add(serviceCache.getValueBinding(b));
 	        }
-	        serviceCache.put(key, values);
-		} 
+	        	serviceCache.put(key, values);
+	        
+		} else logger.debug(key+" windows entry found matching entry in cache");
 		
 		Set<Binding> ret = serviceCache.get(key);
 		QueryIterator qIter = new QueryIterPlainWrapper(ret.iterator());			

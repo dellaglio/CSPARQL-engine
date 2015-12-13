@@ -1,11 +1,14 @@
 package eu.larkc.csparql.sparql.jena.service;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.jena.atlas.lib.cache.CacheLRU;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.query.Query;
@@ -34,18 +37,21 @@ import com.hp.hpl.jena.sparql.engine.binding.BindingUtils;
 public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 
 //	private int cacheSize=50;
-
-	private List<Var> keys; 
-	private List<Var> values;
+	private static Logger logger = LoggerFactory.getLogger(CacheAcqua.class);
 	
-	public CacheAcqua(float loadFactor, int maxSize, List<Var> keys, List<Var> values){
+	private Set<Var> keys; 
+	private Set<Var> values;
+	
+	public CacheAcqua(float loadFactor, int maxSize, Set<Var> keys, Set<Var> values){
 		super(loadFactor, maxSize);
 		this.keys = keys;
 		this.values = values;
 	}
 	
-	public CacheAcqua(int cacheSize){
+	public CacheAcqua(int cacheSize, Set<Var> keys, Set<Var> values){
 		super(0.8f, cacheSize);
+		this.keys=keys;
+		this.values=values;
 //		this.cacheSize = cacheSize;
 	}
 	
@@ -86,11 +92,11 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 //			
 //	}
 
-	public List<Var> getKeyVars(){
+	public Set<Var> getKeyVars(){
 		return keys;
 	}
 
-	public List<Var> getValueVars(){
+	public Set<Var> getValueVars(){
 		return values;
 	}
 
@@ -100,6 +106,7 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 	}
 
 	public Binding getKeyBinding(Binding b){
+		logger.debug(">>keys"+keys);
 		Iterator<Var> keyIt = keys.iterator();
 		BindingMap keyBm = BindingFactory.create();
 		while(keyIt.hasNext()){
@@ -125,16 +132,19 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 	}
 	
 	public Set<Binding> put(Binding key, Set<Binding> value){
+		logger.debug("filling the cache with "+key+ value);
 		return super.put(key, value);
 	}
 	
 	public Set<Binding> put(Binding key, Binding value){
+		logger.debug("filling the cache with "+key+ value);
 		HashSet<Binding> v=new HashSet<Binding>();
 		v.add(value);
 		return super.put(key, v);
 	}
 	
 	public Set<Binding> put(Binding b){
+		logger.debug("filling the cache with "+b);
 		Binding keyBm = getKeyBinding(b);
 		Binding valueBm = getValueBinding(b);
 
