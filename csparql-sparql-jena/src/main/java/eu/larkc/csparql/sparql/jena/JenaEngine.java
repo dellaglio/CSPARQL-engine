@@ -599,7 +599,7 @@ public class JenaEngine implements SparqlEngine {
 			
 			//if yes, replace OpService with OpServiceCache
 			
-			QueryRunner qr=new QueryRunner(spQuery.toString(), this.model);
+//			QueryRunner qr=new QueryRunner(spQuery.toString(), this.model);
 	//		CacheAcqua.INSTANCE.init(qr);//.computeCacheKeyVars(),qr.computeCacheValueVars());
 		}
 		

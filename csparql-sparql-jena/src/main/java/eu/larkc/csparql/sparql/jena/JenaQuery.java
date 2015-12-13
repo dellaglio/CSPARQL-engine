@@ -27,16 +27,55 @@ package eu.larkc.csparql.sparql.jena;
 import java.util.List;
 import java.util.UUID;
 
-import com.hp.hpl.jena.graph.Triple;
+import org.apache.jena.atlas.io.IndentedWriter;
+
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.sparql.algebra.Algebra;
 import com.hp.hpl.jena.sparql.algebra.Op;
-import com.hp.hpl.jena.sparql.algebra.OpAsQuery;
-import com.hp.hpl.jena.sparql.core.DatasetDescription;
+import com.hp.hpl.jena.sparql.algebra.Transform;
+import com.hp.hpl.jena.sparql.algebra.TransformBase;
+import com.hp.hpl.jena.sparql.algebra.TransformCopy;
+import com.hp.hpl.jena.sparql.algebra.Transformer;
+import com.hp.hpl.jena.sparql.algebra.op.OpAssign;
+import com.hp.hpl.jena.sparql.algebra.op.OpBGP;
+import com.hp.hpl.jena.sparql.algebra.op.OpConditional;
+import com.hp.hpl.jena.sparql.algebra.op.OpDatasetNames;
+import com.hp.hpl.jena.sparql.algebra.op.OpDiff;
+import com.hp.hpl.jena.sparql.algebra.op.OpDisjunction;
+import com.hp.hpl.jena.sparql.algebra.op.OpDistinct;
+import com.hp.hpl.jena.sparql.algebra.op.OpExt;
+import com.hp.hpl.jena.sparql.algebra.op.OpExtend;
+import com.hp.hpl.jena.sparql.algebra.op.OpFilter;
+import com.hp.hpl.jena.sparql.algebra.op.OpGraph;
+import com.hp.hpl.jena.sparql.algebra.op.OpGroup;
+import com.hp.hpl.jena.sparql.algebra.op.OpJoin;
+import com.hp.hpl.jena.sparql.algebra.op.OpLabel;
+import com.hp.hpl.jena.sparql.algebra.op.OpLeftJoin;
+import com.hp.hpl.jena.sparql.algebra.op.OpList;
+import com.hp.hpl.jena.sparql.algebra.op.OpMinus;
+import com.hp.hpl.jena.sparql.algebra.op.OpNull;
+import com.hp.hpl.jena.sparql.algebra.op.OpOrder;
+import com.hp.hpl.jena.sparql.algebra.op.OpPath;
+import com.hp.hpl.jena.sparql.algebra.op.OpProcedure;
+import com.hp.hpl.jena.sparql.algebra.op.OpProject;
+import com.hp.hpl.jena.sparql.algebra.op.OpPropFunc;
+import com.hp.hpl.jena.sparql.algebra.op.OpQuad;
+import com.hp.hpl.jena.sparql.algebra.op.OpQuadBlock;
+import com.hp.hpl.jena.sparql.algebra.op.OpQuadPattern;
+import com.hp.hpl.jena.sparql.algebra.op.OpReduced;
+import com.hp.hpl.jena.sparql.algebra.op.OpSequence;
+import com.hp.hpl.jena.sparql.algebra.op.OpService;
+import com.hp.hpl.jena.sparql.algebra.op.OpSlice;
+import com.hp.hpl.jena.sparql.algebra.op.OpTable;
+import com.hp.hpl.jena.sparql.algebra.op.OpTopN;
+import com.hp.hpl.jena.sparql.algebra.op.OpTriple;
+import com.hp.hpl.jena.sparql.algebra.op.OpUnion;
 import com.hp.hpl.jena.sparql.syntax.Template;
 
+import eu.larkc.csparql.common.config.Config;
 import eu.larkc.csparql.sparql.api.SparqlQuery;
+import eu.larkc.csparql.sparql.jena.service.OpServiceCache;
 
 public class JenaQuery implements SparqlQuery {
 
@@ -69,6 +108,19 @@ public class JenaQuery implements SparqlQuery {
 
 		Op op = Algebra.compile(oldQuery);
 		rootOp = Algebra.optimize(op);
+		
+		if(Config.INSTANCE.isJenaUsingServiceCaching()){
+			Transform tb = new TransformCopy(){
+				@Override
+				public Op transform(OpService opService, Op subOp) {
+					return new OpServiceCache(opService.getService(), subOp, opService.getServiceElement(), opService.getSilent());
+				}
+			};
+			rootOp = Transformer.transform(tb, rootOp);
+			
+//			rootOp.output(IndentedWriter.stdout);
+		}		
+		
 //		query = OpAsQuery.asQuery(op);
 		
 //		if(oldQuery.isAskType())

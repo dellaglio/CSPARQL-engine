@@ -33,6 +33,12 @@
 			<groupId>eu.larkc.csparql</groupId>
 			<artifactId>csparql-core</artifactId>
 			<version>${project.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.apache.jena</groupId>
+					<artifactId>jena-arq-Percentile</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<dependency>
