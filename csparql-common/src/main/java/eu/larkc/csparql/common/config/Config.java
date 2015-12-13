@@ -81,6 +81,10 @@ public class Config {
 		}
 	}
 
+	public boolean fillJenaServiceCacheAtStart(){
+		return config.getBoolean("jena.service.cache.fillJenaServiceCacheAtStart");
+	}
+	
 	public boolean isEsperUsingExternalTimestamp() {
 		return config.getBoolean("esper.externaltime.enabled");
 	}
