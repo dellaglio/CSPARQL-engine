@@ -71,16 +71,17 @@ public class CacheTestOneQueryMultipleSERVICEOneStream {
 	private CsparqlEngine engine;
 	private TestGeneratorFromInput streamGenerator;
 
-
+//generate server data so that have s10-s20 common between 2 servers
 	@BeforeClass public static void startupFuseki(){
 		//we attend Y+1 to the end of subject and object to reveal the fuseki instance that it hosting them for testing purposes
 		//to make sure that cache didn't mixup cache content of 2 queries
+		String[] preds=new String[]{"http://example.org/knows","http://example.org/collegue"};
 		for(int y=0;y<numberOfInstances;y++){
 			Graph g = new GraphMem();
 			for (int k=0;k<FusekiServerDataSize;k++){
 				g.add(new Triple(
-						NodeFactory.createURI("http://example.org/S"+(y+1)+"_"+k), 
-						NodeFactory.createURI("http://example.org/followerCount"), 
+						NodeFactory.createURI("http://example.org/S"+(y*10+k)), 
+						NodeFactory.createURI(preds[y]), 
 						NodeFactory.createURI("http://example.org/k")));
 			}
 
@@ -139,23 +140,26 @@ public class CacheTestOneQueryMultipleSERVICEOneStream {
 					{//in this test cacse the actual object value in fuseki is (k+100) and in cache is k, so given that the results are k confirms that we use cache
 						new long[]{1000, 1340, 2000, 2020, 3000, 3001}, 
 						1, 1, new ArrayList(Arrays.asList(
-								new ArrayList(/*Arrays.asList( // evaluation 1 
-												new TestRDFTupleResults("http://example.org/S1_2","http://example.org/k1")
-												)*/),
-										new ArrayList(/*Arrays.asList( //evaluation2
-												new TestRDFTupleResults("http://example.org/S1_4","http://example.org/k1")
-												)*/)))					
+								new ArrayList(Arrays.asList( // evaluation 1 
+												new TestRDFTupleResults("http://example.org/S10","http://example.org/knows","http://example.org/k","http://example.org/collegue","http://example.org/k")
+												)),
+										new ArrayList(Arrays.asList( //evaluation2
+												new TestRDFTupleResults("http://example.org/S12","http://example.org/knows","http://example.org/k","http://example.org/collegue","http://example.org/k"),
+												new TestRDFTupleResults("http://example.org/S11","http://example.org/knows","http://example.org/k","http://example.org/collegue","http://example.org/k")
+												))))					
 					},{//in this test cacse the actual object value in fuseki is (k+200) and in cache is k+100, so given that the results are k+100 confirms that we use cache
 						new long[]{600, 1000, 1340, 2000, 2020, 3000, 3001}, 
 						1, 1, new ArrayList(Arrays.asList(// evaluation 1 												
 										new ArrayList(/*Arrays.asList(// evaluation 2
 												new TestRDFTupleResults("http://example.org/S1_2","http://example.org/102_1"))*/),
-										new ArrayList(/*Arrays.asList( //evaluation 3
-												new TestRDFTupleResults("http://example.org/S1_4","http://example.org/104_1")
-												)*/),
-										new ArrayList(/*Arrays.asList( //evaluation 3
-												new TestRDFTupleResults("http://example.org/S1_4","http://example.org/104_1")
-												)*/)))
+										new ArrayList(Arrays.asList( //evaluation 3
+												new TestRDFTupleResults("http://example.org/S11","http://example.org/knows","http://example.org/k","http://example.org/collegue","http://example.org/k")
+												,new TestRDFTupleResults("http://example.org/S10","http://example.org/knows","http://example.org/k","http://example.org/collegue","http://example.org/k")
+												)),
+										new ArrayList(Arrays.asList( //evaluation 3
+												new TestRDFTupleResults("http://example.org/S12","http://example.org/knows","http://example.org/k","http://example.org/collegue","http://example.org/k")
+												,new TestRDFTupleResults("http://example.org/S13","http://example.org/knows","http://example.org/k","http://example.org/collegue","http://example.org/k")
+												))))
 					}
 				});
 	}
@@ -180,13 +184,18 @@ public class CacheTestOneQueryMultipleSERVICEOneStream {
 		
 		ResultTable formatter = new ResultTable();
 		c1.addObserver(formatter);
-		streamGenerator.run();
+		streamGenerator.runCacheTestOneQueryMultipleSERVICEOneStream();
 		List<List<RDFTuple>> actual = formatter.getResults();
 		//if we change the fuseki content here for the next testcase it will be caching the changed content and the expected results will be different for the second test case
 		
 		logger.debug(actual.toString());
 		logger.debug(expected.toString());
-		assertEquals(actual,expected);
+		for (int j=0;j<actual.size();j++){//per evaluation
+			List<RDFTuple> currentQResult=actual.get(j);
+			for(int k=0;k<currentQResult.size();k++)
+					assertEquals(expected.get(j).get(k),currentQResult.get(k));
+			
+		}
 		
 	}
 	
@@ -197,13 +206,10 @@ public class CacheTestOneQueryMultipleSERVICEOneStream {
 			Graph g2 = new GraphMem();
 			for (int k=0;k<FusekiServerDataSize/2;k++){
 				g2.add(new Triple(
-						NodeFactory.createURI("http://example.org/S"+(y+1)+"_"+k), 
+						NodeFactory.createURI("http://example.org/S"+(y*10+k)), 
 						NodeFactory.createURI(preds[y]), 
 						NodeFactory.createURI("http://example.org/"+(k+numberOfFusekiChange*100)+"_"+(y+1))));
-				g2.add(new Triple(
-						NodeFactory.createURI("http://example.org/S"+(y+1)+"_"+k), 
-						NodeFactory.createURI(preds[(y+1)%2]), 
-						NodeFactory.createURI("http://example.org/unrelevant")));
+				
 			}
 			accessor[y].putModel(ModelFactory.createModelForGraph(g2));		
 		}

@@ -41,7 +41,7 @@ public class TestGeneratorFromInput extends RdfStream{
 	//this function intends to produce streams where the object can match the subject of a fuseki server content
 	public void runCacheTestOneQueryMultipleSERVICEOneStream(){
 		Random r= new Random();
-		int i = 0;
+		int i = 8;
 		for(Long timestamp : timestamps){
 			String c;
 			/*if(i<10)
@@ -49,8 +49,8 @@ public class TestGeneratorFromInput extends RdfStream{
 			else*/
 			c=""+i;
 
-			RdfQuadruple tempQ = new RdfQuadruple(subj+((i%2)+1)+"_"+c, pred[i%2], subj+(r.nextInt(2)+1)+"_"+c, timestamp);
-			logger.debug("streamed>>> "+subj+((i%2)+1)+"_"+c+ pred[i%2]+ "_"+subj+(r.nextInt(2)+1)+"_"+c+ timestamp);
+			RdfQuadruple tempQ = new RdfQuadruple(subj+c, pred[i%2], subj+(r.nextInt(2)+1)+"_"+c, timestamp);
+			logger.debug("streamed>>> "+subj+c+ pred[i%2]+ "_"+subj+(r.nextInt(2)+1)+"_"+c+ timestamp);
 			this.put(tempQ);
 			i++;
 		}		
