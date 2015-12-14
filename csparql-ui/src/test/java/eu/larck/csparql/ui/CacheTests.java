@@ -85,7 +85,7 @@ public class CacheTests {
 		//to make sure that cache didn't mixup cache content of 2 queries
 		for(int y=0;y<numberOfInstances;y++){
 			Graph g = new GraphMem();
-			for (int k=0;k<20;k++){
+			for (int k=0;k<10;k++){
 				g.add(new Triple(
 						NodeFactory.createURI("http://example.org/S"+(y+1)+"_"+k), 
 						NodeFactory.createURI("http://example.org/followerCount"), 
@@ -211,7 +211,7 @@ public class CacheTests {
 		for(int y=0;y<numberOfInstances;y++){
 			accessor[y].getModel().removeAll();
 			Graph g2 = new GraphMem();
-			for (int k=0;k<20;k++){
+			for (int k=0;k<10;k++){
 				g2.add(new Triple(
 						NodeFactory.createURI("http://example.org/S"+(y+1)+"_"+k), 
 						NodeFactory.createURI("http://example.org/followerCount"), 

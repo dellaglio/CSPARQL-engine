@@ -553,7 +553,6 @@ public class CsparqlEngineImpl implements Observer, CsparqlEngine {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void update(Observable o, Object arg) {
-		
 		final RdfSnapshot r = (RdfSnapshot) o;
 		List<RdfQuadruple> quads = (List<RdfQuadruple>) arg;
 
@@ -583,8 +582,10 @@ public class CsparqlEngineImpl implements Observer, CsparqlEngine {
 		if (count == 0)
 			return;
 
+		logger.debug("~~~~~~~~~~~~~~~~~~~~START OF QUERY EVALUATION");
 		final RDFTable result = this.sparqlEngine.evaluateQuery(csparqlquery.getSparqlQuery());
-
+		logger.debug("~~~~~~~~~~~~~~~~~~~~END OF QUERY EVALUATION");
+		
 		// timestamp(result, csparqlquery);
 
 		// logger.info("results obtained in "+ (System.nanoTime()-starttime) +
