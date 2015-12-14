@@ -74,6 +74,7 @@ public class CacheTests {
 	}
 	private static int numberOfInstances=1;//number of remote service providers 
 	private static int numberOfFusekiChange=1;//this is intended to keep track of the object values for testing
+	private static int FusekiServerDataSize=20;
 	private static EmbeddedFusekiServer[] fuseki=new EmbeddedFusekiServer[numberOfInstances];
 	private static DatasetAccessor[] accessor=new DatasetAccessor[numberOfInstances];
 	private CsparqlEngine engine;
@@ -85,7 +86,7 @@ public class CacheTests {
 		//to make sure that cache didn't mixup cache content of 2 queries
 		for(int y=0;y<numberOfInstances;y++){
 			Graph g = new GraphMem();
-			for (int k=0;k<10;k++){
+			for (int k=0;k<FusekiServerDataSize;k++){
 				g.add(new Triple(
 						NodeFactory.createURI("http://example.org/S"+(y+1)+"_"+k), 
 						NodeFactory.createURI("http://example.org/followerCount"), 
@@ -98,11 +99,20 @@ public class CacheTests {
 		}
 		
 	}
-
+	
+	/*
+	* if we disbale caching below test will fail because caching is not enabled and the result will be directly retrived form remote fuseki, 
+	 * if we enable caching and enable fillJenaServiceCacheAtStart the below test should pass (without cache replacement i.e., cache size is larger than FusekiServerDataSize)
+	 * if cache size is smaller than FusekiServerDataSize there are chances that this setting fails for above data (because cache dynamically fetch not existing data and refresh its conent while the test output is designed for cacses that cache content will never change)
+	 * if we enable caching but disbale fillJenaServiceCacheAtStart the below test should fail
+	 * */
+	
 	@BeforeClass public static void initialConfig(){
 		Properties prop = new Properties();
 		prop.put("esper.externaltime.enabled", true);
 		prop.put("jena.service.cache.enabled", true);
+		prop.put("jena.service.cache.fillJenaServiceCacheAtStart",true);
+		prop.put("jena.service.cache.size",FusekiServerDataSize);
 		Config.INSTANCE.setConfigParams(prop);
 	}
 
@@ -141,8 +151,7 @@ public class CacheTests {
 
 
 	@Parameterized.Parameters
-	public static Iterable<?> data() {//this  test output is true for cases when the cache size is very small and none of the stream members would be included in the initial cache
-		//however if the cache is large enough to include the stream elements from the begining their expected value should be the value of initial cache which is k
+	public static Iterable<?> data() {
 		return Arrays.asList(
 				new Object[][]{
 					{
@@ -182,6 +191,10 @@ public class CacheTests {
 		CsparqlQueryResultProxy c1 = null;
 		try {
 			c1 = engine.registerQuery(queryGetAll, false);
+			changeFusekisContent(); 
+			/*
+			 * cache intialization happens during query registeration, so we change the fuseki content after query registeration */
+			 			
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
@@ -190,7 +203,6 @@ public class CacheTests {
 		c1.addObserver(formatter);
 		streamGenerator.run();
 		List<List<RDFTuple>> actual = formatter.getResults();
-		changeFusekisContent(); 
 		//if we change the fuseki content here for the next testcase it will be caching the changed content and the expected results will be different for the second test case
 		
 		logger.debug(actual.toString());
@@ -211,7 +223,7 @@ public class CacheTests {
 		for(int y=0;y<numberOfInstances;y++){
 			accessor[y].getModel().removeAll();
 			Graph g2 = new GraphMem();
-			for (int k=0;k<10;k++){
+			for (int k=0;k<FusekiServerDataSize;k++){
 				g2.add(new Triple(
 						NodeFactory.createURI("http://example.org/S"+(y+1)+"_"+k), 
 						NodeFactory.createURI("http://example.org/followerCount"), 
