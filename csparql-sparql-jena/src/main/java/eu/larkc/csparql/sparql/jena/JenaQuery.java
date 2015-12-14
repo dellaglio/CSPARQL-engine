@@ -87,7 +87,8 @@ public class JenaQuery implements SparqlQuery {
 		Op op = Algebra.compile(oldQuery);
 		rootOp = Algebra.optimize(op);
 		
-		if(Config.INSTANCE.isJenaUsingServiceCaching()){
+		if(Config.INSTANCE.isJenaUsingServiceCaching() ){
+			if(countServiceClauses()==1){
 			Transform tb = new TransformCopy(){
 				@Override
 				public Op transform(OpService opService, Op subOp) {
@@ -95,7 +96,9 @@ public class JenaQuery implements SparqlQuery {
 				}
 			};
 			rootOp = Transformer.transform(tb, rootOp);
-			
+			}else{
+				logger.warn("the Query has more than a SERVICE clause, Caching is disabled!!");
+			}
 //			rootOp.output(IndentedWriter.stdout);
 		}		
 		
@@ -312,6 +315,19 @@ public class JenaQuery implements SparqlQuery {
 		Set<Var> intersection = new HashSet<Var>(serviceVars); // use the copy constructor
 		intersection.retainAll(otherVars);
 		return intersection;
+	}
+public int countServiceClauses() {
+		
+		final List<OpService> os = new ArrayList<OpService>();
+		//removes the SERVICES clauses from original query and put it in os
+		Transformer.transform(new TransformCopy(){
+			public Op transform(OpService opService, Op subOp){
+				os.add(opService);
+				return OpNull.create();
+			}
+		}, Algebra.compile(query));
+
+		return os.size();
 	}
 
 }
