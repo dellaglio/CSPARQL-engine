@@ -3,7 +3,9 @@ package eu.larkc.csparql.sparql.jena.service;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.Test;
 
@@ -15,33 +17,33 @@ import com.hp.hpl.jena.sparql.engine.binding.BindingMap;
 public class CacheAcquaTest {
 	
 	@Test public void shouldInit(){
-		List<Var> keyVars = Arrays.asList(
+		Set<Var> keyVars = new HashSet<Var>(Arrays.asList(
 				Var.alloc("k1"),
 				Var.alloc("k2")
-				);
-		List<Var> valueVars = Arrays.asList(
+				));
+		Set<Var> valueVars = new HashSet<Var>(Arrays.asList(
 				Var.alloc("v1"),
 				Var.alloc("v2"),
 				Var.alloc("v3")
-				);
+				));
 		
-		CacheAcqua cache = new CacheAcqua(0.8f, 10, keyVars, valueVars);
+		CacheAcqua cache = new CacheAcqua(10, keyVars, valueVars);
 		assertEquals(keyVars, cache.getKeyVars());
 		assertEquals(valueVars, cache.getValueVars());
 	}
 	@Test public void shouldGetKeyBinding(){
 		//initializing cache
-		List<Var> keyVars = Arrays.asList(
+		Set<Var> keyVars = new HashSet<Var>(Arrays.asList(
 				Var.alloc("k1"),
 				Var.alloc("k2")
-				);
-		List<Var> valueVars = Arrays.asList(
+				));
+		Set<Var> valueVars = new HashSet<Var>(Arrays.asList(
 				Var.alloc("v1"),
 				Var.alloc("v2"),
 				Var.alloc("v3")
-				);
+				));
 		
-		CacheAcqua cache = new CacheAcqua(0.8f, 10, keyVars, valueVars);
+		CacheAcqua cache = new CacheAcqua(10, keyVars, valueVars);
 		//defining a binding 
 		BindingMap bm = BindingFactory.create();
 		bm.add(Var.alloc("k1"), NodeFactory.createLiteral("a"));
@@ -59,17 +61,17 @@ public class CacheAcquaTest {
 	}
 	@Test public void testValueBinding(){
 		//initializing cache
-		List<Var> keyVars = Arrays.asList(
+		Set<Var> keyVars = new HashSet<Var>(Arrays.asList(
 				Var.alloc("k1"),
 				Var.alloc("k2")
-				);
-		List<Var> valueVars = Arrays.asList(
+				));
+		Set<Var> valueVars = new HashSet<Var>(Arrays.asList(
 				Var.alloc("v1"),
 				Var.alloc("v2"),
 				Var.alloc("v3")
-				);
+				));
 		
-		CacheAcqua cache = new CacheAcqua(0.8f, 10, keyVars, valueVars);
+		CacheAcqua cache = new CacheAcqua(10, keyVars, valueVars);
 		//defining a binding 
 		BindingMap bm = BindingFactory.create();
 		bm.add(Var.alloc("k1"), NodeFactory.createLiteral("a"));
@@ -99,17 +101,17 @@ public class CacheAcquaTest {
 		bmKey.add(Var.alloc("k2"), NodeFactory.createLiteral("b"));
 
 
-		List<Var> keyVars = Arrays.asList(
+		Set<Var> keyVars = new HashSet<Var>(Arrays.asList(
 				Var.alloc("k1"),
 				Var.alloc("k2")
-				);
-		List<Var> valueVars = Arrays.asList(
+				));
+		Set<Var> valueVars = new HashSet<Var>(Arrays.asList(
 				Var.alloc("v1"),
 				Var.alloc("v2"),
 				Var.alloc("v3")
-				);
+				));
 		
-		CacheAcqua cache = new CacheAcqua(0.8f, 10, keyVars, valueVars);
+		CacheAcqua cache = new CacheAcqua(10, keyVars, valueVars);
 		assertEquals(false, cache.contains(bmKey));
 		cache.put(bm);
 		assertEquals(true, cache.contains(bmKey));
