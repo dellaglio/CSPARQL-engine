@@ -72,6 +72,7 @@ public class CacheTests {
 			}
 		}
 	}
+	
 	private static int numberOfInstances=1;//number of remote service providers 
 	private static int numberOfFusekiChange=1;//this is intended to keep track of the object values for testing
 	private static int FusekiServerDataSize=20;
@@ -113,6 +114,7 @@ public class CacheTests {
 		prop.put("jena.service.cache.enabled", true);
 		prop.put("jena.service.cache.fillJenaServiceCacheAtStart",true);
 		prop.put("jena.service.cache.size",FusekiServerDataSize);
+		prop.put("jena.service.cache.maintenance.type", "no-maintenance");
 		Config.INSTANCE.setConfigParams(prop);
 	}
 
@@ -227,7 +229,7 @@ public class CacheTests {
 				g2.add(new Triple(
 						NodeFactory.createURI("http://example.org/S"+(y+1)+"_"+k), 
 						NodeFactory.createURI("http://example.org/followerCount"), 
-						NodeFactory.createURI("http://example.org/"+(k*numberOfFusekiChange+100)+"_"+(y+1))));
+						NodeFactory.createURI("http://example.org/"+(k+numberOfFusekiChange*100)+"_"+(y+1))));
 			}
 			accessor[y].putModel(ModelFactory.createModelForGraph(g2));		
 		}

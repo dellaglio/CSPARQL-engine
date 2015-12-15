@@ -114,5 +114,13 @@ public class Config {
 		for(Entry<Object,Object> entry : properties.entrySet())
 			config.setProperty(entry.getKey().toString(), entry.getValue());
 	}
+
+	public String getMaintenanceType(){
+		return config.getString("jena.service.cache.maintenance.type");
+	}
+	
+	public int getBudget() {
+		return config.getInt("jena.service.cache.maintenance.budget");
+	}
 	
 }

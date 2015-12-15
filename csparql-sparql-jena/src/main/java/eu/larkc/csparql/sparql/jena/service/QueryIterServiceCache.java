@@ -25,7 +25,7 @@ public class QueryIterServiceCache  extends QueryIterRepeatApply{
 	
 	public QueryIterServiceCache(QueryIterator input, OpServiceCache opService, ExecutionContext context){
 		super(input, context) ;
-		serviceCache = ((OpServiceCache) opService).getCache();
+		serviceCache = opService.getCache();
 		this.opService = opService ;		
 	}
 
@@ -44,6 +44,7 @@ public class QueryIterServiceCache  extends QueryIterRepeatApply{
 	        	Binding b = qIter.nextBinding();
 	        	values.add(serviceCache.getValueBinding(b));
 	        }
+	        //if(values.size()!=0)
 	        	serviceCache.put(key, values);
 	        
 		} else logger.debug(key+" windows entry found matching entry in cache");

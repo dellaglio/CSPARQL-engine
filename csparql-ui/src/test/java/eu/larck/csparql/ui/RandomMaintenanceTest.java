@@ -25,9 +25,6 @@ import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.mem.GraphMem;
 import com.hp.hpl.jena.query.DatasetAccessor;
 import com.hp.hpl.jena.query.DatasetAccessorFactory;
-import com.hp.hpl.jena.query.QueryExecution;
-import com.hp.hpl.jena.query.QueryExecutionFactory;
-import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.sparql.core.DatasetGraphFactory;
 
@@ -40,48 +37,35 @@ import eu.larkc.csparql.core.engine.CsparqlEngineImpl;
 import eu.larkc.csparql.core.engine.CsparqlQueryResultProxy;
 import eu.larkc.csparql.utils.ResultTable;
 
+
+/*
+ * WARNING: depending on different settings for update budget the test output should be modified
+ * the first updateBudget element of each window will be synchronized with cache
+ * the rest will stay with the old value from previous window
+ */
+
 @RunWith(Parameterized.class)
-public class CacheTestOneQueryMultipleSERVICEOneStream {
-	private static Logger logger = LoggerFactory.getLogger(CacheTestOneQueryMultipleSERVICEOneStream.class);
+public class RandomMaintenanceTest {
+	private static Logger logger = LoggerFactory.getLogger(RandomMaintenanceTest.class);
 	
-	public static class TestRDFTupleResults extends RDFTuple{
-		public TestRDFTupleResults(String... values) {
-			super.addFields(values);
-		}
-		public boolean equals(Object object){
-			if(object instanceof TestRDFTupleResults || object instanceof RDFTuple){
-				RDFTuple temp=((RDFTuple)object);
-
-				for(int m=0;m< temp.toString().split("\t").length;m++){
-					if (!temp.get(m).equalsIgnoreCase(this.get(m)))
-						return false;
-				}
-				return true;
-
-			} else {
-				return false;
-			}
-		}
-	}
-	private static int numberOfInstances=2;
-	private static int numberOfFusekiChange=1;//keep track of the object values for testing
+	private static int numberOfInstances=1;//number of remote service providers 
+	private static int numberOfFusekiChange=1;//this is intended to keep track of the object values for testing
 	private static int FusekiServerDataSize=20;
 	private static EmbeddedFusekiServer[] fuseki=new EmbeddedFusekiServer[numberOfInstances];
 	private static DatasetAccessor[] accessor=new DatasetAccessor[numberOfInstances];
 	private CsparqlEngine engine;
 	private TestGeneratorFromInput streamGenerator;
 
-//generate server data so that have s10-s20 common between 2 servers
+
 	@BeforeClass public static void startupFuseki(){
-		//we attend Y+1 to the end of subject and object to reveal the fuseki instance that it hosting them for testing purposes
+		//we attach Y+1 to the end of subject and object to reveal the fuseki instance that it hosting them for testing purposes
 		//to make sure that cache didn't mixup cache content of 2 queries
-		String[] preds=new String[]{"http://example.org/knows","http://example.org/collegue"};
 		for(int y=0;y<numberOfInstances;y++){
 			Graph g = new GraphMem();
 			for (int k=0;k<FusekiServerDataSize;k++){
 				g.add(new Triple(
-						NodeFactory.createURI("http://example.org/S"+(y*10+k)), 
-						NodeFactory.createURI(preds[y]), 
+						NodeFactory.createURI("http://example.org/S"+(y+1)+"_"+k), 
+						NodeFactory.createURI("http://example.org/followerCount"), 
 						NodeFactory.createURI("http://example.org/k")));
 			}
 
@@ -89,20 +73,34 @@ public class CacheTestOneQueryMultipleSERVICEOneStream {
 			accessor[y] = DatasetAccessorFactory.createHTTP("http://localhost:303"+(y+1)+"/test"+(y+1)+"/data");		
 			fuseki[y].start();	
 		}
-
+		
 	}
-
+	/*
+	* if we disbale caching below test will fail because caching is not enabled and the result will be directly retrived form remote fuseki, 
+	 * if we enable caching and enable fillJenaServiceCacheAtStart the below test should pass (without cache replacement i.e., cache size is larger than FusekiServerDataSize)
+	 * if cache size is smaller than FusekiServerDataSize there are chances that this setting fails for above data (because cache dynamically fetch not existing data and refresh its conent while the test output is designed for cacses that cache content will never change)
+	 * if we enable caching but disbale fillJenaServiceCacheAtStart the below test should fail
+	 * */
+	
 	@BeforeClass public static void initialConfig(){
 		Properties prop = new Properties();
 		prop.put("esper.externaltime.enabled", true);
 		prop.put("jena.service.cache.enabled", true);
-		prop.put("jena.service.cache.maintenance.type", "no-maintenance");
+		prop.put("jena.service.cache.fillJenaServiceCacheAtStart",true);
+		prop.put("jena.service.cache.size",FusekiServerDataSize);
+		//maintenance policy parameters
+		prop.put("jena.service.cache.maintenance.budget", 2);
+		/*
+		 * if we set the update budget to 1 only first element of each evaluation will be synchronized with remote
+		 * and the rest will be according to previous window evlauation
+		 */
+		prop.put("jena.service.cache.maintenance.type", "wsj-random");
 		Config.INSTANCE.setConfigParams(prop);
 	}
 
 	@AfterClass public static void shutdownFuseki(){
 		for(int y=0;y<fuseki.length;y++)
-			fuseki[y].stop();
+		fuseki[y].stop();
 	}
 
 	/*@Before public void restartFuseki() {
@@ -123,8 +121,7 @@ public class CacheTestOneQueryMultipleSERVICEOneStream {
 	private long[] input;
 	private int width, slide;
 	private List<List<TestRDFTupleResults>> expected;//each evaluation results a list of RDFTuple
-	
-	public CacheTestOneQueryMultipleSERVICEOneStream(long[] input, int width, int slide, List<List<TestRDFTupleResults>> expected){
+	public RandomMaintenanceTest(long[] input, int width, int slide, List<List<TestRDFTupleResults>> expected){
 		this.input = input;
 		this.width = width;
 		this.slide = slide;
@@ -138,38 +135,35 @@ public class CacheTestOneQueryMultipleSERVICEOneStream {
 	public static Iterable<?> data() {
 		return Arrays.asList(
 				new Object[][]{
-					{//in this test cacse the actual object value in fuseki is (k+100) and in cache is k, so given that the results are k confirms that we use cache
+					{
 						new long[]{1000, 1340, 2000, 2020, 3000, 3001}, 
 						1, 1, new ArrayList(Arrays.asList(
-								new ArrayList(Arrays.asList( // evaluation 1 
-												new TestRDFTupleResults("http://example.org/S10","http://example.org/knows","http://example.org/k","http://example.org/collegue","http://example.org/k")
-												)),
-										new ArrayList(Arrays.asList( //evaluation2
-												new TestRDFTupleResults("http://example.org/S12","http://example.org/knows","http://example.org/k","http://example.org/collegue","http://example.org/k"),
-												new TestRDFTupleResults("http://example.org/S11","http://example.org/knows","http://example.org/k","http://example.org/collegue","http://example.org/k")
-												))))					
-					},{//in this test cacse the actual object value in fuseki is (k+200) and in cache is k+100, so given that the results are k+100 confirms that we use cache
+								new ArrayList(Arrays.asList(
+										new TestRDFTupleResults("http://example.org/S1_2","http://example.org/followerCount","http://example.org/102_1"),
+										new TestRDFTupleResults("http://example.org/S1_1","http://example.org/followerCount","http://example.org/101_1"))),
+								new ArrayList(Arrays.asList(
+										new TestRDFTupleResults("http://example.org/S1_4","http://example.org/followerCount","http://example.org/104_1"),
+										new TestRDFTupleResults("http://example.org/S1_3","http://example.org/followerCount","http://example.org/103_1")
+										))))
+					},{
 						new long[]{600, 1000, 1340, 2000, 2020, 3000, 3001}, 
-						1, 1, new ArrayList(Arrays.asList(// evaluation 1 												
-										new ArrayList(/*Arrays.asList(// evaluation 2
-												new TestRDFTupleResults("http://example.org/S1_2","http://example.org/102_1"))*/),
-										new ArrayList(Arrays.asList( //evaluation 3
-												new TestRDFTupleResults("http://example.org/S11","http://example.org/knows","http://example.org/k","http://example.org/collegue","http://example.org/k")
-												,new TestRDFTupleResults("http://example.org/S10","http://example.org/knows","http://example.org/k","http://example.org/collegue","http://example.org/k")
-												)),
-										new ArrayList(Arrays.asList( //evaluation 3
-												new TestRDFTupleResults("http://example.org/S12","http://example.org/knows","http://example.org/k","http://example.org/collegue","http://example.org/k")
-												,new TestRDFTupleResults("http://example.org/S13","http://example.org/knows","http://example.org/k","http://example.org/collegue","http://example.org/k")
-												))))
+						1, 1, new ArrayList(Arrays.asList(
+								new ArrayList(Arrays.asList(
+										new TestRDFTupleResults("http://example.org/S1_1","http://example.org/followerCount","http://example.org/201_1"))),
+								new ArrayList(Arrays.asList(
+										new TestRDFTupleResults("http://example.org/S1_3","http://example.org/followerCount","http://example.org/203_1"),
+										new TestRDFTupleResults("http://example.org/S1_2","http://example.org/followerCount","http://example.org/202_1"))),
+								new ArrayList(Arrays.asList(
+										new TestRDFTupleResults("http://example.org/S1_4","http://example.org/followerCount","http://example.org/204_1"),
+										new TestRDFTupleResults("http://example.org/S1_5","http://example.org/followerCount","http://example.org/205_1")
+										))))
 					}
 				});
 	}
-
 	
-	@Test public void shouldWarnAndRunQueryWithOutCaching(){
-		String queryGetAll = "REGISTER QUERY PIPPO AS SELECT ?S ?P2 ?O2 ?P3 ?O3 FROM STREAM <http://myexample.org/stream> [RANGE "+width+"s STEP "+slide+"s]"
+	@Test public void shouldMatchQueryResultUsingOneQueryOneSERVICEoneStream(){
+		String queryGetAll = "REGISTER QUERY PIPPO AS SELECT ?S ?P2 ?O2 FROM STREAM <http://myexample.org/stream> [RANGE "+width+"s STEP "+slide+"s]"
 				+ "  WHERE { ?S ?P ?O SERVICE <http://localhost:3031/test1/sparql> {?S ?P2 ?O2}"
-				+ " SERVICE <http://localhost:3032/test2/sparql> {?S ?P3 ?O3}"
 				+ "}";
 		logger.debug(queryGetAll);
 
@@ -177,7 +171,9 @@ public class CacheTestOneQueryMultipleSERVICEOneStream {
 		CsparqlQueryResultProxy c1 = null;
 		try {
 			c1 = engine.registerQuery(queryGetAll, false);
-			
+			changeFusekisContent(); 
+			/*
+			 * cache intialization happens during query registeration, so we change the fuseki content after query registeration */
 			 			
 		} catch (ParseException e) {
 			e.printStackTrace();
@@ -185,37 +181,33 @@ public class CacheTestOneQueryMultipleSERVICEOneStream {
 		
 		ResultTable formatter = new ResultTable();
 		c1.addObserver(formatter);
-		streamGenerator.runCacheTestOneQueryMultipleSERVICEOneStream();
+		streamGenerator.run();
 		List<List<RDFTuple>> actual = formatter.getResults();
 		//if we change the fuseki content here for the next testcase it will be caching the changed content and the expected results will be different for the second test case
 		
 		logger.debug(actual.toString());
-		logger.debug(expected.toString());
-		for (int j=0;j<actual.size();j++){//per evaluation
-			List<RDFTuple> currentQResult=actual.get(j);
-			for(int k=0;k<currentQResult.size();k++)
-					assertEquals(expected.get(j).get(k),currentQResult.get(k));
-			
+		logger.debug(">>>.."+expected);
+		for(int i = 0; i<actual.size(); i++)
+		{
+			List<RDFTuple> tempA=actual.get(i);
+			List<TestRDFTupleResults> tempE=expected.get(i);
+			for(int j=0;j<tempA.size();j++)
+				assertEquals(tempE.get(j), tempA.get(j));
 		}
-		
 	}
-	
+
 	private static void changeFusekisContent() {
-		String[] preds=new String[]{"http://example.org/knows","http://example.org/collegue"};
 		for(int y=0;y<numberOfInstances;y++){
 			accessor[y].getModel().removeAll();
 			Graph g2 = new GraphMem();
-			for (int k=0;k<FusekiServerDataSize/2;k++){
+			for (int k=0;k<FusekiServerDataSize;k++){
 				g2.add(new Triple(
-						NodeFactory.createURI("http://example.org/S"+(y*10+k)), 
-						NodeFactory.createURI(preds[y]), 
+						NodeFactory.createURI("http://example.org/S"+(y+1)+"_"+k), 
+						NodeFactory.createURI("http://example.org/followerCount"), 
 						NodeFactory.createURI("http://example.org/"+(k+numberOfFusekiChange*100)+"_"+(y+1))));
-				
 			}
 			accessor[y].putModel(ModelFactory.createModelForGraph(g2));		
 		}
 		numberOfFusekiChange++;
 	}
-	
-	
 }

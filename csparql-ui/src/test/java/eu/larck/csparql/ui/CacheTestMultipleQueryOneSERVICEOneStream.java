@@ -108,6 +108,7 @@ public class CacheTestMultipleQueryOneSERVICEOneStream {
 		prop.put("jena.service.cache.enabled", true);
 		prop.put("jena.service.cache.fillJenaServiceCacheAtStart",true);
 		prop.put("jena.service.cache.size",FusekiServerDataSize);
+		prop.put("jena.service.cache.maintenance.type", "no-maintenance");
 		Config.INSTANCE.setConfigParams(prop);
 	}
 
