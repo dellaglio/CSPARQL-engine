@@ -19,16 +19,20 @@ import com.hp.hpl.jena.sparql.engine.main.QC;
 
 import eu.larkc.csparql.common.config.Config;
 
-public class QueryIterServiceCacheRandom extends QueryIterRepeatApply{
-	private static Logger logger = LoggerFactory.getLogger(QueryIterServiceCacheRandom.class);
+/*
+ * the cache is maintained by LRU policy (i.e., last recently updated cache entry will be maintained) 
+ * using a specific update budget
+ */
+public class QueryIterServiceCacheLRU extends QueryIterRepeatApply{
+	private static Logger logger = LoggerFactory.getLogger(QueryIterServiceCacheLRU.class);
 	private CacheAcqua serviceCache;
 	private OpService opService;
-	private int budgetUsed;
+	private int budgetUsed; 
 
-	public QueryIterServiceCacheRandom(QueryIterator input, OpServiceCache opService, ExecutionContext context){
+	public QueryIterServiceCacheLRU(QueryIterator input, OpServiceCache opService, ExecutionContext context){
 		super(input, context) ;
 		serviceCache = opService.getCache();
-		this.opService = opService ;	
+		this.opService = opService ;		
 		budgetUsed=0;
 	}
 
@@ -38,27 +42,29 @@ public class QueryIterServiceCacheRandom extends QueryIterRepeatApply{
 		/*
 		 * if update budget is left
 		 * 	1)if requested element is not in cache we fetch it from remote and add it to cache
-		 * 	2)if requested element is in cache we update a random cache entry
+		 * 	2)requested element is in cache we update cache entries based on Least recently updated
 		 * if no update budget is left
 		 * 	1)if element is in cache we return it
 		 * 	2)if element is not in cache we return null
 		 */
 		Binding key = serviceCache.getKeyBinding(outerBinding);
 		if(budgetUsed<Config.INSTANCE.getBudget()){
-			if(!serviceCache.contains(key)){
+			if (!serviceCache.contains(key)){
+				logger.debug(key+" windows entry without matching entry in cache! fetching from service URL!");
 				Op op = QC.substitute(opService, outerBinding) ;
-				QueryIterator qIter = Service.exec((OpService)op, getExecContext().getContext()) ;
+		        QueryIterator qIter = Service.exec((OpService)op, getExecContext().getContext()) ;
 
-				Set<Binding> values = new HashSet<Binding>();
-				while(qIter.hasNext()){
-					Binding b = qIter.nextBinding();
-					values.add(serviceCache.getValueBinding(b));
-				}
-				serviceCache.put(key, values);
-				budgetUsed++;
+		        Set<Binding> values = new HashSet<Binding>();
+		        while(qIter.hasNext()){
+		        	Binding b = qIter.nextBinding();
+		        	values.add(serviceCache.getValueBinding(b));
+		        }
+		        //if(values.size()!=0)
+		        	serviceCache.put(key, values);
+		        	budgetUsed++;
 			}else{
-				Binding keyRND= serviceCache.RandomKey();
-				Op op = QC.substitute(opService, keyRND) ;
+				Binding keyLRU= serviceCache.popKey();
+				Op op = QC.substitute(opService, keyLRU) ;
 				QueryIterator qIter = Service.exec((OpService)op, getExecContext().getContext()) ;
 
 				Set<Binding> values = new HashSet<Binding>();
@@ -66,18 +72,18 @@ public class QueryIterServiceCacheRandom extends QueryIterRepeatApply{
 					Binding b = qIter.nextBinding();
 					values.add(serviceCache.getValueBinding(b));
 				}
-				serviceCache.put(keyRND, values);
+				serviceCache.put(keyLRU, values);
 				budgetUsed++;
-			}
-		} else {
+			}	
+		}else{
 			if (!serviceCache.contains(key)){
 				logger.warn("element is missing in cache but no budget is left to fetch it! we assume it has no mapping ...");
 				return null;
 			}else{
-
+				
 			}
 		}
-		Set<Binding> ret = serviceCache.get(key);
+		Set<Binding> ret = serviceCache.get(key);		
 		QueryIterator qIter = new QueryIterPlainWrapper(ret.iterator());			
 		QueryIterator qIter2 = new QueryIterCommonParent(qIter, outerBinding, getExecContext()) ;
 		return qIter2 ;

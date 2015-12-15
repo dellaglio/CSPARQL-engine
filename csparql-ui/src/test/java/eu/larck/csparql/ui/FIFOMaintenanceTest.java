@@ -39,14 +39,17 @@ import eu.larkc.csparql.utils.ResultTable;
 
 
 /*
- * WARNING: depending on different settings for update budget the test output should be modified
+ * WARNING: depending on different settings for 
+ * 1) update budget and 
+ * 2) cache size 
+ * the test output should be modified
  * the first updateBudget element of each window will be synchronized with cache
  * the rest will stay with the old value from previous window
  */
 
 @RunWith(Parameterized.class)
-public class RandomMaintenanceTest {
-	private static Logger logger = LoggerFactory.getLogger(RandomMaintenanceTest.class);
+public class FIFOMaintenanceTest {
+	private static Logger logger = LoggerFactory.getLogger(FIFOMaintenanceTest.class);
 	
 	private static int numberOfInstances=1;//number of remote service providers 
 	private static int numberOfFusekiChange=1;//this is intended to keep track of the object values for testing
@@ -87,7 +90,7 @@ public class RandomMaintenanceTest {
 		prop.put("esper.externaltime.enabled", true);
 		prop.put("jena.service.cache.enabled", true);
 		prop.put("jena.service.cache.fillJenaServiceCacheAtStart",true);
-		prop.put("jena.service.cache.size",FusekiServerDataSize);
+		prop.put("jena.service.cache.size",FusekiServerDataSize/2);
 		//maintenance policy parameters
 		prop.put("jena.service.cache.maintenance.budget", 2);
 		/*
@@ -121,7 +124,7 @@ public class RandomMaintenanceTest {
 	private long[] input;
 	private int width, slide;
 	private List<List<TestRDFTupleResults>> expected;//each evaluation results a list of RDFTuple
-	public RandomMaintenanceTest(long[] input, int width, int slide, List<List<TestRDFTupleResults>> expected){
+	public FIFOMaintenanceTest(long[] input, int width, int slide, List<List<TestRDFTupleResults>> expected){
 		this.input = input;
 		this.width = width;
 		this.slide = slide;

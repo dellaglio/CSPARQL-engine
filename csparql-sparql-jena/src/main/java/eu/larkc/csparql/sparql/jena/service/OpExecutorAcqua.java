@@ -26,11 +26,15 @@ public class OpExecutorAcqua extends OpExecutor {
 //		System.out.println("window triggered for "+execCxt.getContext().getAsString(Symbol.create("http://jena.hpl.hp.com/ARQ/system#query")));
 		if(opService instanceof OpServiceCache){
 			switch (Config.INSTANCE.getMaintenanceType()) {
+			case "fifo":
+			{
+				return new QueryIterServiceCacheFIFO(input, (OpServiceCache) opService, execCxt) ;				
+			}
 			case "wsj-random":
 			{
 				return new QueryIterServiceCacheRandom(input, (OpServiceCache) opService, execCxt) ;				
 			}
-			case "wsj-lru":
+			case "global-lru":
 			{
 				return new QueryIterServiceCacheLRU(input, (OpServiceCache)opService, execCxt);
 			}
