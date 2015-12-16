@@ -49,11 +49,14 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 			timeStamp=t;
 		}
 		public int compareTo(TimedKey o) {
+			final int BEFORE = -1;
+		    final int EQUAL = 0;
+		    final int AFTER = 1;
 			if (this.timeStamp>o.timeStamp)
-				return 1;
+				return AFTER;
 			else if (this.timeStamp<o.timeStamp)
-				return -1;
-			else return 0;
+				return BEFORE;
+			else return EQUAL;
 		}
 		
 	}
@@ -186,7 +189,7 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 		
 	}
 	public Binding popKey(){
-		return lastUpdateTimeOfKey.first().key;
+		return lastUpdateTimeOfKey.last().key;
 	}
 	public Binding RandomKey(){
 		Random r=new Random();

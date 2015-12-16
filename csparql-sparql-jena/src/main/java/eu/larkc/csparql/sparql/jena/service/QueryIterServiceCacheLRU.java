@@ -64,6 +64,7 @@ public class QueryIterServiceCacheLRU extends QueryIterRepeatApply{
 		        	budgetUsed++;
 			}else{
 				Binding keyLRU= serviceCache.popKey();
+				
 				Op op = QC.substitute(opService, keyLRU) ;
 				QueryIterator qIter = Service.exec((OpService)op, getExecContext().getContext()) ;
 
@@ -72,6 +73,7 @@ public class QueryIterServiceCacheLRU extends QueryIterRepeatApply{
 					Binding b = qIter.nextBinding();
 					values.add(serviceCache.getValueBinding(b));
 				}
+				logger.error(">>>>>>>>>>>>>>>>>>>updating "+keyLRU + "with value "+ values);
 				serviceCache.put(keyLRU, values);
 				budgetUsed++;
 			}	
