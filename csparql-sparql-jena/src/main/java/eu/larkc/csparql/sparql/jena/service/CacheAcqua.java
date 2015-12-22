@@ -1,6 +1,7 @@
 package eu.larkc.csparql.sparql.jena.service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -57,19 +58,22 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 			else if (this.timeStamp<o.timeStamp)
 				return BEFORE;
 			else return EQUAL;
-		}
-		
+		}		
 	}
 //	private int cacheSize=50;
 	private static Logger logger = LoggerFactory.getLogger(CacheAcqua.class);
 	
 	private Set<Var> keys; 
 	private Set<Var> values;
+	private HashMap<Binding, Long> updateBBT;
+	public HashMap<Binding, Integer> cacheChangeRate;
 	private SortedSet<TimedKey> lastUpdateTimeOfKey;
 	public CacheAcqua(float loadFactor, int maxSize, Set<Var> keys, Set<Var> values){
 		super(loadFactor, maxSize);
 		this.keys = keys;
 		this.values = values;
+		updateBBT=new HashMap<Binding, Long>();
+		cacheChangeRate=new HashMap<Binding, Integer>();
 		lastUpdateTimeOfKey=new TreeSet<TimedKey>();
 	}
 	
@@ -77,6 +81,8 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 		super(0.8f, cacheSize);
 		this.keys=keys;
 		this.values=values;
+		updateBBT=new HashMap<Binding, Long>();		
+		cacheChangeRate=new HashMap<Binding, Integer>();
 		lastUpdateTimeOfKey=new TreeSet<TimedKey>();
 //		this.cacheSize = cacheSize;
 	}
@@ -132,7 +138,7 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 	}
 
 	public Binding getKeyBinding(Binding b){
-		logger.debug(">>keys"+keys);
+		//logger.debug(">>keys"+keys);
 		Iterator<Var> keyIt = keys.iterator();
 		BindingMap keyBm = BindingFactory.create();
 		while(keyIt.hasNext()){

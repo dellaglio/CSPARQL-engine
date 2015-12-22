@@ -1,4 +1,4 @@
-package eu.larkc.csparql.sparql.jena.service;
+package eu.larkc.csparql.sparql.jena.service.maintenance;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -16,8 +16,12 @@ import com.hp.hpl.jena.sparql.engine.iterator.QueryIterCommonParent;
 import com.hp.hpl.jena.sparql.engine.iterator.QueryIterPlainWrapper;
 import com.hp.hpl.jena.sparql.engine.iterator.QueryIterRepeatApply;
 import com.hp.hpl.jena.sparql.engine.main.QC;
+import com.hp.hpl.jena.sparql.engine.main.iterator.LRUPolicy;
+import com.hp.hpl.jena.sparql.engine.main.iterator.QueryIterServiceLRU;
 
 import eu.larkc.csparql.common.config.Config;
+import eu.larkc.csparql.sparql.jena.service.CacheAcqua;
+import eu.larkc.csparql.sparql.jena.service.OpServiceCache;
 
 /*
  * the cache is maintained by LRU policy (i.e., last recently updated cache entry will be maintained) 
@@ -28,7 +32,10 @@ public class QueryIterServiceCacheLRU extends QueryIterRepeatApply{
 	private CacheAcqua serviceCache;
 	private OpService opService;
 	private int budgetUsed; 
-
+	
+	/*Set<Binding> electedList = new HashSet<Binding>();
+	public MaintenancePolicy mypolicy = null;
+	*/
 	public QueryIterServiceCacheLRU(QueryIterator input, OpServiceCache opService, ExecutionContext context){
 		super(input, context) ;
 		serviceCache = opService.getCache();

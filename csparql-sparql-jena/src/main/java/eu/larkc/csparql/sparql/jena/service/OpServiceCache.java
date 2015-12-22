@@ -35,8 +35,8 @@ public class OpServiceCache extends OpService {
 		/*super(serviceNode, subOp, silent);
 		cache = new CacheAcqua(Config.INSTANCE.getJenaServiceCachingSize(),keys,values);
 		if (Config.INSTANCE.fillJenaServiceCacheAtStart())
-			fillCache(serviceNode, subOp);
-		logger.debug("OpServiceCache instantiated!!!");*/
+			fillCache(serviceNode, subOp);*/
+		logger.debug("OpServiceCache instantiated!!!");
 	}
 
 	public OpServiceCache(Node serviceNode, Op subOp, ElementService elt, boolean silent,Set<Var> keys, Set<Var> values){
@@ -55,7 +55,7 @@ public class OpServiceCache extends OpService {
 		subOp = new OpSlice(subOp, Long.MIN_VALUE /*query.getOffset()*/ /*start*/, length/*query.getLimit()*//*length*/) ;
 		query = OpAsQuery.asQuery(subOp);
 
-		//logger.debug("query for caching is >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + query);
+		logger.debug("query for caching is >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + query);
 
 		QueryExecution qe = QueryExecutionFactory.sparqlService(
 				endPoint.getURI(), query);
@@ -65,7 +65,7 @@ public class OpServiceCache extends OpService {
 			QuerySolution qs = rs.next();//nextSolution();
 			BindingProjectNamed solb = (BindingProjectNamed) BindingUtils
 					.asBinding(qs);
-			logger.debug("put in cache>>>>>>>"+solb);
+			//logger.debug("put in cache>>>>>>>"+solb);
 			cache.put(solb);
 			//printContent();
 		}				

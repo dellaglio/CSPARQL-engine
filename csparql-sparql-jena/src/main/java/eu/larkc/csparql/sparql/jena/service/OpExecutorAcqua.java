@@ -11,45 +11,62 @@ import com.hp.hpl.jena.sparql.engine.main.iterator.QueryIterService;
 
 import eu.larkc.csparql.common.config.Config;
 //import com.hp.hpl.jena.sparql.util.Symbol;
+import eu.larkc.csparql.sparql.jena.service.maintenance.QueryIterServiceCacheFIFO;
+import eu.larkc.csparql.sparql.jena.service.maintenance.QueryIterServiceCacheLRU;
+import eu.larkc.csparql.sparql.jena.service.maintenance.QueryIterServiceMaintainedCache;
+import eu.larkc.csparql.sparql.jena.service.maintenance.policies.RandomMaintenance;
 
 public class OpExecutorAcqua extends OpExecutor {
 	private static Logger logger = LoggerFactory.getLogger(OpExecutorAcqua.class);
-	
-	
+
+
 	protected OpExecutorAcqua(ExecutionContext execCxt) {
 		super(execCxt);
-		
+
 	}
 
 	@Override
 	protected QueryIterator execute(OpService opService, QueryIterator input) {
-//		System.out.println("window triggered for "+execCxt.getContext().getAsString(Symbol.create("http://jena.hpl.hp.com/ARQ/system#query")));
+		//		System.out.println("window triggered for "+execCxt.getContext().getAsString(Symbol.create("http://jena.hpl.hp.com/ARQ/system#query")));
 		if(opService instanceof OpServiceCache){
-			switch (Config.INSTANCE.getMaintenanceType()) {
-			case "fifo":
-			{
-				return new QueryIterServiceCacheFIFO(input, (OpServiceCache) opService, execCxt) ;				
-			}
-			case "wsj-random":
-			{
-				return new QueryIterServiceCacheRandom(input, (OpServiceCache) opService, execCxt) ;				
-			}
-			case "global-lru":
-			{
-				return new QueryIterServiceCacheLRU(input, (OpServiceCache)opService, execCxt);
-			}
-			case "no-maintenance":
-			default :
-				{
-					return new QueryIterServiceCache(input, (OpServiceCache) opService, execCxt) ;
-				}
-			}
-		
+			if (Config.INSTANCE.isJenaCacheUsingMaintenance()){
+				if(true){// TODO: check if it is a 1-1 mapping
+					QueryIterServiceMaintainedCache mc=new QueryIterServiceMaintainedCache(input, (OpServiceCache)opService, execCxt);
+					//mc.readChangeRatesForMaintenance();
+					switch (Config.INSTANCE.getMaintenanceType()) {
+					case "fifo":
+					{
+						//mc.mypolicy=new 										
+					}
+					case "wsj-random":
+					{
+						mc.mypolicy=new RandomMaintenance();			
+					}
+					case "global-lru":
+					{
+						//mc.mypolicy=new 
+					}
 
-			
+					}
+					mc.executePolicy();
+					return mc;
+					}else{
+						/*
+						 * QueryIterServiceMaintainedMNCache mnc=new QueryIterServiceMaintainedMNCache(input, (OpServiceCache)opService, execCxt);
+						
+						switch among execution policies
+						execute policy
+						return mnc*/
+						return null;
+					}
+			}else{
+				return new QueryIterServiceCache(input, (OpServiceCache) opService, execCxt) ;
+			}
+
+
+		}else
+			return new QueryIterService(input, opService, execCxt) ;
 	}
-		return new QueryIterService(input, opService, execCxt) ;
-    }
 
 }
 

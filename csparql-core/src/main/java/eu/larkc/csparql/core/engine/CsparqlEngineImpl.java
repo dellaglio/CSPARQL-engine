@@ -295,11 +295,9 @@ public class CsparqlEngineImpl implements Observer, CsparqlEngine {
 
 	@Override
 	public CsparqlQueryResultProxy registerQuery(String command, boolean activateInference) throws ParseException {
-
 		final Translator t = Configuration.getCurrentConfiguration().createTranslator(this);
 
 		CSparqlQuery query = null;
-
 		// Split continuous part from static part
 		try {
 			query = t.translate(command);
@@ -308,7 +306,6 @@ public class CsparqlEngineImpl implements Observer, CsparqlEngine {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
 		logger.debug("CEP query: {}", query.getCepQuery().getQueryCommand());
 		logger.debug("SPARQL query: {}", query.getSparqlQuery().getQueryCommand().replace("\n", "").replace("\r", ""));
 		

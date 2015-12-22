@@ -93,6 +93,14 @@ public class Config {
 		return config.getBoolean("jena.service.cache.enabled");
 	}
 	
+	public boolean isJenaCacheUsingMaintenance() {
+		return config.getBoolean("jena.service.cache.maintenance.enabled");
+	}
+	
+	public String CacheEntriesChangeRateForMaintenance() {
+		return config.getString("jena.service.cache.maintenance.changeRatePath");
+	}
+	
 	public String getJenaServiceCachingType() {
 		return config.getString("jena.service.cache.type");
 	}

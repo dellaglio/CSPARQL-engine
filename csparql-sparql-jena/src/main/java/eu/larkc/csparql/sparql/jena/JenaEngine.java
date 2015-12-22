@@ -74,6 +74,8 @@ import com.hp.hpl.jena.sparql.algebra.Algebra;
 import com.hp.hpl.jena.sparql.engine.QueryIterator;
 import com.hp.hpl.jena.sparql.engine.ResultSetStream;
 import com.hp.hpl.jena.sparql.engine.main.QC;
+import com.hp.hpl.jena.sparql.engine.main.StageBuilder;
+import com.hp.hpl.jena.sparql.engine.main.StageGenerator;
 import com.hp.hpl.jena.sparql.function.FunctionRegistry;
 import com.hp.hpl.jena.sparql.graph.GraphFactory;
 import com.hp.hpl.jena.sparql.modify.TemplateLib;
@@ -92,6 +94,7 @@ import eu.larkc.csparql.sparql.api.SparqlEngine;
 import eu.larkc.csparql.sparql.api.SparqlQuery;
 import eu.larkc.csparql.sparql.jena.common.JenaReasonerWrapper;
 import eu.larkc.csparql.sparql.jena.data_source.JenaDatasource;
+import eu.larkc.csparql.sparql.jena.ext.AcquaTSStageGenerator;
 import eu.larkc.csparql.sparql.jena.ext.Timestamps;
 import eu.larkc.csparql.sparql.jena.ext.timestamp;
 import eu.larkc.csparql.sparql.jena.service.OpExecutorFactoryAcqua;
@@ -112,7 +115,7 @@ public class JenaEngine implements SparqlEngine {
 
 	Map<String, Model> graphs = new HashMap<String, Model>();
 
-//	Map<Statement,Long> timestamps = new HashMap<Statement,Long>();
+	Map<Statement,Long> timestamps = new HashMap<Statement,Long>();
 
 	private boolean performTimestampFunction = false;
 
@@ -133,6 +136,16 @@ public class JenaEngine implements SparqlEngine {
 		
 		if(Config.INSTANCE.isJenaUsingServiceCaching()) 
 			QC.setFactory(ARQ.getContext(), new OpExecutorFactoryAcqua());
+		if(Config.INSTANCE.isJenaCacheUsingMaintenance())
+		{
+			// Get the standard one.
+			  StageGenerator orig = (StageGenerator)ARQ.getContext().get(ARQ.stageGenerator) ;
+			  // Create a new one
+			  StageGenerator atsStageGenerator= new AcquaTSStageGenerator(orig) ;
+			  // Register it
+			StageBuilder.setGenerator(ARQ.getContext(), atsStageGenerator) ;
+		}
+		
 	}
 
 

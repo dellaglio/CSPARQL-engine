@@ -140,6 +140,9 @@ public class JenaQuery implements SparqlQuery {
 	public boolean isSelectQuery() {
 		return query.isSelectType();
 	}
+	public boolean isMNmaintenance(){
+		return false;
+	}
 
 	public Object getGraphURIs() {
 		return query.getGraphURIs();

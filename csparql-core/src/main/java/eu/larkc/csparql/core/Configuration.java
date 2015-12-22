@@ -153,6 +153,7 @@ public class Configuration {
          for (final Constructor< ? > cc : ctors) {
 
             if (cc.getParameterTypes().length == 1) {
+            	System.out.println(command);
                e = (SparqlQuery) cc.newInstance(command);
                return e;
             }

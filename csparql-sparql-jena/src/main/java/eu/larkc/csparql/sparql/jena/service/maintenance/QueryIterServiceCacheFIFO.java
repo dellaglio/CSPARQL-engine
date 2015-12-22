@@ -1,4 +1,4 @@
-package eu.larkc.csparql.sparql.jena.service;
+package eu.larkc.csparql.sparql.jena.service.maintenance;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -18,6 +18,8 @@ import com.hp.hpl.jena.sparql.engine.iterator.QueryIterRepeatApply;
 import com.hp.hpl.jena.sparql.engine.main.QC;
 
 import eu.larkc.csparql.common.config.Config;
+import eu.larkc.csparql.sparql.jena.service.CacheAcqua;
+import eu.larkc.csparql.sparql.jena.service.OpServiceCache;
 
 /*
  * the cache is maintained randomly using a specific update budget (budget is granted based on first-come-first-serve) 
