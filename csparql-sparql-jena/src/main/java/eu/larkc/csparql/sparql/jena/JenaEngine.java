@@ -133,19 +133,19 @@ public class JenaEngine implements SparqlEngine {
 		super();
 		FunctionRegistry.get().put("http://larkc.eu/csparql/sparql/jena/ext#timestamp", timestamp.class) ;
 		Timestamps.INSTANCE.init();
-		
+
 		if(Config.INSTANCE.isJenaUsingServiceCaching()) 
 			QC.setFactory(ARQ.getContext(), new OpExecutorFactoryAcqua());
 		if(Config.INSTANCE.isJenaCacheUsingMaintenance())
 		{
+			QC.setFactory(ARQ.getContext(), new OpExecutorFactoryAcqua());
 			// Get the standard one.
-			  StageGenerator orig = (StageGenerator)ARQ.getContext().get(ARQ.stageGenerator) ;
-			  // Create a new one
-			  StageGenerator atsStageGenerator= new AcquaTSStageGenerator(orig) ;
-			  // Register it
+			StageGenerator orig = (StageGenerator)ARQ.getContext().get(ARQ.stageGenerator) ;
+			// Create a new one
+			StageGenerator atsStageGenerator= new AcquaTSStageGenerator(orig) ;
+			// Register it
 			StageBuilder.setGenerator(ARQ.getContext(), atsStageGenerator) ;
 		}
-		
 	}
 
 
@@ -174,7 +174,7 @@ public class JenaEngine implements SparqlEngine {
 		if(performTimestampFunction){
 			if(timestamp != 0){
 				Timestamps.INSTANCE.put(s, new Long(timestamp));
-//				timestamps.put(s, new Long(timestamp));
+				//				timestamps.put(s, new Long(timestamp));
 			}
 		}
 		this.model.add(s);
@@ -184,61 +184,61 @@ public class JenaEngine implements SparqlEngine {
 		// TODO implement SparqlEngine.clean
 		this.model.remove(this.model);
 		Timestamps.INSTANCE.clear();
-//		timestamps.clear();
+		//		timestamps.clear();
 	}
 
 
 	public void destroy() {
 		this.model.close();
 		Timestamps.INSTANCE.clear();
-//		timestamps.clear();
+		//		timestamps.clear();
 	}
 
 
 	public RDFTable evaluateQuery(final SparqlQuery q) {
 
 		long startTS = System.currentTimeMillis();
-		
+
 		if(!(q instanceof JenaQuery))
 			throw new RuntimeException("The query is not of the expected type");
-		
+
 		JenaQuery query = (JenaQuery) q;
-		
+
 		//TODO: what is it for?
-//		for(String s: query.getGraphURIs()){
-//			List<RDFTuple> list = jds.getNamedModel(s);
-//			for(RDFTuple t : list)
-//				addStatement(t.get(0), t.get(1), t.get(2));
-//		}
+		//		for(String s: query.getGraphURIs()){
+		//			List<RDFTuple> list = jds.getNamedModel(s);
+		//			for(RDFTuple t : list)
+		//				addStatement(t.get(0), t.get(1), t.get(2));
+		//		}
 
 		QueryIterator root;
-		
+
 		if(reasonerMap.containsKey(query.getId())){
 			if(reasonerMap.get(query.getId()).isActive()){
 				Reasoner reasoner = (Reasoner) reasonerMap.get(query.getId()).getReasoner();
 				InfModel infmodel = ModelFactory.createInfModel(reasoner, this.model);
-				
+
 				root = Algebra.exec(((JenaQuery)query).getRootOp(), infmodel);
-				
-//				qexec = QueryExecutionFactory.create(q, infmodel);
+
+				//				qexec = QueryExecutionFactory.create(q, infmodel);
 			} else {
 				root = Algebra.exec(((JenaQuery)query).getRootOp(), model);
-//				qexec = QueryExecutionFactory.create(q, model);
+				//				qexec = QueryExecutionFactory.create(q, model);
 			}
 		} else {
 			root = Algebra.exec(((JenaQuery)query).getRootOp(), model);
-//			qexec = QueryExecutionFactory.create(q, model);
+			//			qexec = QueryExecutionFactory.create(q, model);
 		}
-		
-		
+
+
 		//adding QueryRunner to context to reterive it in the itrator for determining key.value vars in the cache
-//		QueryRunner qr=new QueryRunner(q.toString(), this.model);
-//		qexec.getContext().put(Symbol.create("acqua:runner"), qr);
-		
+		//		QueryRunner qr=new QueryRunner(q.toString(), this.model);
+		//		qexec.getContext().put(Symbol.create("acqua:runner"), qr);
+
 		RDFTable table = null;
 
 		if (query.isSelectQuery()){
-//			final ResultSet resultSet = qexec.execSelect();//constructor of query IterService
+			//			final ResultSet resultSet = qexec.execSelect();//constructor of query IterService
 			final ResultSet resultSet = new ResultSetStream(query.getResultVars(), model, root) ;
 
 			table = new RDFTable(resultSet.getResultVars());
@@ -278,7 +278,7 @@ public class JenaEngine implements SparqlEngine {
 			Model m = null;
 			if (query.isDescribeQuery())
 				throw new RuntimeException("Not implemented");
-//				m = qexec.execDescribe();
+			//				m = qexec.execDescribe();
 			else{
 				Iterator<Triple> it = TemplateLib.calcTriples(query.getConstructTemplate().getTriples(), root);
 				m = GraphFactory.makeJenaDefaultModel();
@@ -604,18 +604,18 @@ public class JenaEngine implements SparqlEngine {
 			if(!jds.containsNamedModel(s))
 				throw new ParseException("The model in the FROM clause is missing in the internal dataset, please put the static model in the dataset using putStaticNamedModel(String iri, String location) method of the engine.", 0);
 		}
-		
+
 		//FIXME: can be removed?
 		//initialize the cache
 		if(Config.INSTANCE.isJenaUsingServiceCaching()){
 			//check if the query has services
-			
+
 			//if yes, replace OpService with OpServiceCache
-			
-//			QueryRunner qr=new QueryRunner(spQuery.toString(), this.model);
-	//		CacheAcqua.INSTANCE.init(qr);//.computeCacheKeyVars(),qr.computeCacheValueVars());
+
+			//			QueryRunner qr=new QueryRunner(spQuery.toString(), this.model);
+			//		CacheAcqua.INSTANCE.init(qr);//.computeCacheKeyVars(),qr.computeCacheValueVars());
 		}
-		
+
 
 	}
 }

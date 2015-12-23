@@ -29,7 +29,7 @@ import eu.larkc.csparql.sparql.jena.service.maintenance.policies.MaintenancePoli
 
 public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 
-	private static Logger logger = LoggerFactory.getLogger(QueryIterServiceCache.class);
+	private static Logger logger = LoggerFactory.getLogger(QueryIterServiceMaintainedCache.class);
 	private CacheAcqua serviceCache;
 	private OpService opService;
 	private static int width;
@@ -66,7 +66,7 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 			}
 			i++;
 		}
-		logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"+i);
+		//logger.debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"+i);
 		//System.out.println(results.keySet().size());
 		return results;
 	}
@@ -80,30 +80,30 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 		QueryIterServiceMaintainedCache.slide = Integer.parseInt(ec.getAsString(Symbol.create("acqua:slide")));
 		QueryIterServiceMaintainedCache.tnow = Long.parseLong(ec.getAsString(Symbol.create("acqua:tnow")));
 		*/currentBindingsInWindow = getCurrentBindingsInWindow(input);
-		logger.debug("filled currentbinding array with window content. size is "+currentBindingsInWindow.size());
+		//logger.debug("filled currentbinding array with window content. size is "+currentBindingsInWindow.size());
 		outerContentIterator = new QueryIterPlainWrapper(currentBindingsInWindow.keySet().iterator());
 		
 	}
 
 	public void executePolicy() {
-		logger.debug(">>>>>>>>>>>>>>>>>>>"+currentBindingsInWindow.size());
+		//logger.debug(">>>>>>>>>>>>>>>>>>>"+currentBindingsInWindow.size());
 		electedList = this.mypolicy.updatePolicy(this, Config.INSTANCE.getBudget());
 		Set<Binding> resultToUpdateInCache = new HashSet<Binding>();
 		int totalTripleUpdatedInCache = 0;
 		
 		
 		for (Binding b : electedList) {
+			//logger.debug("??????????????????????????????????????????????"+b);
 			Set<Binding> tempResults = MaintainKey(b);
 			resultToUpdateInCache.addAll(tempResults);
-			Set<Binding> tempBsforUpdate = serviceCache.get(b);
-
+			Set<Binding> tempBsforUpdate = serviceCache.get(serviceCache.getKeyBinding(b));
 			if (tempBsforUpdate.size() != tempResults.size()) {
 				throw new RuntimeException("querying results number is not equal to the results number in local");
 			}
 			
 			//serviceCache.updateBBT(b, tnow);
 
-			serviceCache.put(b, tempResults);
+			serviceCache.put(serviceCache.getKeyBinding(b), tempResults);
 			totalTripleUpdatedInCache += tempResults.size();
 
 		}	
@@ -112,6 +112,7 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 	
 
 	private Set<Binding> MaintainKey(Binding outerBinding) {
+		logger.debug("maintaining "+outerBinding);
 		Op op = QC.substitute(opService, outerBinding) ;
         QueryIterator qIter = Service.exec((OpService)op, getExecContext().getContext()) ;
 
@@ -128,7 +129,6 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 	@Override
 	protected QueryIterator nextStage(Binding outerBinding) {
 		//check if the outerBinding hits the cache
-		System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
 		Binding key = serviceCache.getKeyBinding(outerBinding);
 		if(!serviceCache.contains(key)){
 			logger.error(key+" windows entry without matching entry in cache! no budget is left to update! we assume it has no binding!");

@@ -21,28 +21,33 @@ public class RandomMaintenance implements MaintenancePolicy{
 	
 	@Override
 	public Set<Binding> updatePolicy(QueryIterRepeatApply qi, int budget) {
+		
+		
 		Set<Binding> result=new HashSet<Binding>();
 
 		if(qi instanceof QueryIterServiceMaintainedCache){
 			HashMap<Binding,Long> windowEntriesTS = ((QueryIterServiceMaintainedCache)qi).getCurrentBindingOfWindow();
+			//logger.debug("bindings with their corresponding timestamp "+windowEntriesTS.values());
 			if(!(budget<windowEntriesTS.size()))
 				return windowEntriesTS.keySet();
 			Iterator<Binding> winIt=windowEntriesTS.keySet().iterator();
 			boolean[] flags = new boolean[windowEntriesTS.size()];
 			Arrays.fill(flags,Boolean.FALSE);
-			if(budget==windowEntriesTS.size())
+			/*if(budget==windowEntriesTS.size())
 				Arrays.fill(flags, Boolean.TRUE);
 			else
-				Arrays.fill(flags,0,budget,Boolean.TRUE);
+				*/Arrays.fill(flags,0,budget,Boolean.TRUE);
 			Collections.shuffle(Arrays.asList(flags));
 			int flagCounter=0;
 			while(winIt.hasNext()){
 				if(flags[flagCounter])
 					result.add(winIt.next());
 				else winIt.next();
+				flagCounter++;
 			}
-			return result;
-
+			//logger.debug("update policy for budget "+budget+ " size of return eleceted set "+result.size());
+			return result;			
+			
 		}
 		return null;
 

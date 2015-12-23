@@ -52,7 +52,7 @@ import eu.larkc.csparql.utils.ResultTable;
 @RunWith(Parameterized.class)
 public class CacheTests {
 	private static Logger logger = LoggerFactory.getLogger(CacheTests.class);
-	
+
 	public static class TestRDFTupleResults extends RDFTuple{
 		public TestRDFTupleResults(String... values) {
 			super.addFields(values);
@@ -60,7 +60,7 @@ public class CacheTests {
 		public boolean equals(Object object){
 			if(object instanceof TestRDFTupleResults || object instanceof RDFTuple){
 				RDFTuple temp=((RDFTuple)object);
-				
+
 				for(int m=0;m< temp.toString().split("\t").length;m++){
 					if (!temp.get(m).equalsIgnoreCase(this.get(m)))
 						return false;
@@ -72,7 +72,7 @@ public class CacheTests {
 			}
 		}
 	}
-	
+
 	private static int numberOfInstances=1;//number of remote service providers 
 	private static int numberOfFusekiChange=1;//this is intended to keep track of the object values for testing
 	private static int FusekiServerDataSize=20;
@@ -92,35 +92,36 @@ public class CacheTests {
 						NodeFactory.createURI("http://example.org/S"+(y+1)+"_"+k), 
 						NodeFactory.createURI("http://example.org/followerCount"), 
 						NodeFactory.createURI("http://example.org/k")));
+				System.out.println("<http://example.org/S"+(y+1)+"_"+k +"> <"+"http://example.org/followerCount"+"> <"+"http://example.org/k> .");
 			}
 
 			fuseki[y] = EmbeddedFusekiServer.create(3031+y, DatasetGraphFactory.create(g), "test"+(y+1)); 
 			accessor[y] = DatasetAccessorFactory.createHTTP("http://localhost:303"+(y+1)+"/test"+(y+1)+"/data");		
 			fuseki[y].start();	
 		}
-		
+
 	}
-	
+
 	/*
-	* if we disbale caching below test will fail because caching is not enabled and the result will be directly retrived form remote fuseki, 
+	 * if we disbale caching below test will fail because caching is not enabled and the result will be directly retrived form remote fuseki, 
 	 * if we enable caching and enable fillJenaServiceCacheAtStart the below test should pass (without cache replacement i.e., cache size is larger than FusekiServerDataSize)
 	 * if cache size is smaller than FusekiServerDataSize there are chances that this setting fails for above data (because cache dynamically fetch not existing data and refresh its conent while the test output is designed for cacses that cache content will never change)
 	 * if we enable caching but disbale fillJenaServiceCacheAtStart the below test should fail
 	 * */
-	
+
 	@BeforeClass public static void initialConfig(){
 		Properties prop = new Properties();
 		prop.put("esper.externaltime.enabled", true);
 		prop.put("jena.service.cache.enabled", true);
 		prop.put("jena.service.cache.fillJenaServiceCacheAtStart",true);
 		prop.put("jena.service.cache.size",FusekiServerDataSize);
-		prop.put("jena.service.cache.maintenance.type", "no-maintenance");
+		prop.put("jena.service.cache.maintenance.enabled", false);
 		Config.INSTANCE.setConfigParams(prop);
 	}
 
 	@AfterClass public static void shutdownFuseki(){
 		for(int y=0;y<fuseki.length;y++)
-		fuseki[y].stop();
+			fuseki[y].stop();
 	}
 
 	/*@Before public void restartFuseki() {
@@ -141,7 +142,7 @@ public class CacheTests {
 	private long[] input;
 	private int width, slide;
 	private List<List<TestRDFTupleResults>> expected;//each evaluation results a list of RDFTuple
-	
+
 	public CacheTests(long[] input, int width, int slide, List<List<TestRDFTupleResults>> expected){
 		this.input = input;
 		this.width = width;
@@ -196,17 +197,17 @@ public class CacheTests {
 			changeFusekisContent(); 
 			/*
 			 * cache intialization happens during query registeration, so we change the fuseki content after query registeration */
-			 			
+
 		} catch (ParseException e) {
 			e.printStackTrace();
 		}
-		
+
 		ResultTable formatter = new ResultTable();
 		c1.addObserver(formatter);
 		streamGenerator.run();
 		List<List<RDFTuple>> actual = formatter.getResults();
 		//if we change the fuseki content here for the next testcase it will be caching the changed content and the expected results will be different for the second test case
-		
+
 		logger.debug(actual.toString());
 		logger.debug(">>>.."+expected);
 		for(int i = 0; i<actual.size(); i++)
@@ -219,8 +220,8 @@ public class CacheTests {
 	}
 
 
-	
-	
+
+
 	private static void changeFusekisContent() {
 		for(int y=0;y<numberOfInstances;y++){
 			accessor[y].getModel().removeAll();

@@ -59,7 +59,6 @@ public class OpServiceCache extends OpService {
 
 		QueryExecution qe = QueryExecutionFactory.sparqlService(
 				endPoint.getURI(), query);
-
 		ResultSet rs = qe.execSelect();	
 		while (rs.hasNext() && cache.size()!=Config.INSTANCE.getJenaServiceCachingSize()) {
 			QuerySolution qs = rs.next();//nextSolution();

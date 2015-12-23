@@ -2,6 +2,7 @@ package eu.larck.csparql.ui;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.FileInputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,8 +26,13 @@ import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.mem.GraphMem;
 import com.hp.hpl.jena.query.DatasetAccessor;
 import com.hp.hpl.jena.query.DatasetAccessorFactory;
+import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.sparql.core.DatasetGraphFactory;
+import com.hp.hpl.jena.update.UpdateExecutionFactory;
+import com.hp.hpl.jena.update.UpdateFactory;
+import com.hp.hpl.jena.update.UpdateProcessor;
+import com.hp.hpl.jena.update.UpdateRequest;
 
 import eu.larck.csparql.ui.CacheTests.TestRDFTupleResults;
 import eu.larkc.csparql.cep.api.TestGeneratorFromInput;
@@ -52,7 +58,7 @@ public class RandomMaintenanceTest {
 	@BeforeClass public static void startupFuseki(){
 		//we attach Y+1 to the end of subject and object to reveal the fuseki instance that it hosting them for testing purposes
 		//to make sure that cache didn't mixup cache content of 2 queries
-		for(int y=0;y<numberOfInstances;y++){
+		/*for(int y=0;y<numberOfInstances;y++){
 			Graph g = new GraphMem();
 			for (int k=0;k<FusekiServerDataSize;k++){
 				g.add(new Triple(
@@ -64,7 +70,7 @@ public class RandomMaintenanceTest {
 			fuseki[y] = EmbeddedFusekiServer.create(3031+y, DatasetGraphFactory.create(g), "test"+(y+1)); 
 			accessor[y] = DatasetAccessorFactory.createHTTP("http://localhost:303"+(y+1)+"/test"+(y+1)+"/data");		
 			fuseki[y].start();	
-		}
+		}*/
 
 	}
 	/*
@@ -82,7 +88,7 @@ public class RandomMaintenanceTest {
 		prop.put("jena.service.cache.size",FusekiServerDataSize);
 		//maintenance policy parameters
 		prop.put("jena.service.cache.maintenance.enabled", true);		
-		prop.put("jena.service.cache.maintenance.budget", 2);
+		prop.put("jena.service.cache.maintenance.budget", 1);
 		/*
 		 * if we set the update budget to 1 only first element of each evaluation will be synchronized with remote
 		 * and the rest will be according to previous window evlauation
@@ -92,8 +98,8 @@ public class RandomMaintenanceTest {
 	}
 
 	@AfterClass public static void shutdownFuseki(){
-		for(int y=0;y<fuseki.length;y++)
-			fuseki[y].stop();
+		/*for(int y=0;y<fuseki.length;y++)
+			fuseki[y].stop();*/
 	}
 
 	/*@Before public void restartFuseki() {
@@ -156,7 +162,8 @@ public class RandomMaintenanceTest {
 
 	@Test public void shouldMatchQueryResultUsingOneQueryOneSERVICEoneStream(){
 		String queryGetAll = "REGISTER QUERY PIPPO AS SELECT ?S ?P2 ?O2 FROM STREAM <http://myexample.org/stream> [RANGE "+width+"s STEP "+slide+"s]"
-				+ "  WHERE { ?S ?P ?O SERVICE <http://localhost:3031/test1/sparql> {?S ?P2 ?O2}"
+				//+ "  WHERE { ?S ?P ?O SERVICE <http://localhost:3031/test1/sparql> {?S ?P2 ?O2}"
+				+ "  WHERE { ?S ?P ?O SERVICE <http://localhost:3030/test/sparql> {?S ?P2 ?O2}"
 				+ "}";
 		logger.debug(queryGetAll);
 
@@ -165,7 +172,8 @@ public class RandomMaintenanceTest {
 		CsparqlQueryResultProxy c1 = null;
 		try {
 			c1 = engine.registerQuery(queryGetAll, false);
-			changeFusekisContent(); 
+			//changeFusekisContent();
+			restartExternalFuseki();
 			/*
 			 * cache intialization happens during query registeration, so we change the fuseki content after query registeration */
 
@@ -190,6 +198,24 @@ public class RandomMaintenanceTest {
 		}
 	}
 
+	private void restartExternalFuseki() {
+		try {
+			String UQ = "DELETE    { ?a ?b ?c } where{?a ?b ?c}; ";
+			UpdateRequest query = UpdateFactory.create(UQ);
+			UpdateProcessor qexec = UpdateExecutionFactory.createRemoteForm(query, "http://localhost:3030/test/update");
+			qexec.execute();
+			String serviceURI = "http://localhost:3030/test/data";
+			DatasetAccessor accessor;
+			accessor = DatasetAccessorFactory.createHTTP(serviceURI);
+			Model model = ModelFactory.createDefaultModel();
+			model.read(new FileInputStream("/home/soheila/c.ttl"), null,
+					"TTL");
+
+			accessor.putModel(model);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 	private static void changeFusekisContent() {
 		for(int y=0;y<numberOfInstances;y++){
 			accessor[y].getModel().removeAll();
