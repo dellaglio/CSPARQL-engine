@@ -32,7 +32,7 @@ public class TestGeneratorFromInput extends RdfStream{
 			c=""+i;
 
 			RdfQuadruple tempQ = new RdfQuadruple(subj+"1_"+c, pred[i%2], obj+c, timestamp);
-			logger.debug("streamed>>> "+subj+"1_"+c+ pred[i%2]+ obj+c+ timestamp);
+			//logger.debug("streamed>>> "+subj+"1_"+c+ pred[i%2]+ obj+c+ timestamp);
 			//first index of subjects indicates the fuseki server number, so if we have only one service clause first index of subject is always 1
 			this.put(tempQ);
 			i++;

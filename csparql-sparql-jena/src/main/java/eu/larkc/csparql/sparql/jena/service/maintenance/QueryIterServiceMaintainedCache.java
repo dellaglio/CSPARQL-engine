@@ -45,6 +45,8 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 		return currentBindingsInWindow;
 	}	
 	
+	
+	
 	private HashMap<Binding, Long> getCurrentBindingsInWindow(QueryIterator input) {
 		HashMap<Binding, Long> results = new HashMap<Binding, Long>();
 		int i = 0;
@@ -153,5 +155,16 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 		return qIter2 ;
 
 	}
+
+
+
+	public Set<Binding> getTopKLRUInWindow(Set<Binding> keySet, int budget) {		
+		return serviceCache.getTopKLRU(keySet,budget);		
+	}
+	
+	public Set<Binding> getTopKGLRU(int budget) {		
+		return serviceCache.getGLRUTopK(budget);		
+	}
+	
 }
 

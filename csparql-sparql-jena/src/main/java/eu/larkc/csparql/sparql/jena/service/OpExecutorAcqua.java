@@ -14,7 +14,10 @@ import eu.larkc.csparql.common.config.Config;
 import eu.larkc.csparql.sparql.jena.service.maintenance.QueryIterServiceCacheFIFO;
 import eu.larkc.csparql.sparql.jena.service.maintenance.QueryIterServiceCacheLRU;
 import eu.larkc.csparql.sparql.jena.service.maintenance.QueryIterServiceMaintainedCache;
+import eu.larkc.csparql.sparql.jena.service.maintenance.policies.GLRUMaintenance;
+import eu.larkc.csparql.sparql.jena.service.maintenance.policies.LRUMaintenance;
 import eu.larkc.csparql.sparql.jena.service.maintenance.policies.RandomMaintenance;
+import eu.larkc.csparql.sparql.jena.service.maintenance.policies.WBMMaintenance;
 
 public class OpExecutorAcqua extends OpExecutor {
 	private static Logger logger = LoggerFactory.getLogger(OpExecutorAcqua.class);
@@ -41,13 +44,23 @@ public class OpExecutorAcqua extends OpExecutor {
 					}
 					case "wsj-random":
 					{
-						mc.mypolicy=new RandomMaintenance();			
+						mc.mypolicy=new RandomMaintenance();	
+						break;
+					}
+					case "lru":
+					{
+						mc.mypolicy=new LRUMaintenance();
+						break;
 					}
 					case "global-lru":
 					{
-						//mc.mypolicy=new 
+						mc.mypolicy=new GLRUMaintenance();
+						break;
 					}
-
+					case "WBM":{
+						mc.mypolicy=new WBMMaintenance();
+						break;
+					}
 					}
 					mc.executePolicy();
 					return mc;

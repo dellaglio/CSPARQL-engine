@@ -51,9 +51,9 @@ import eu.larkc.csparql.utils.ResultTable;
  */
 
 @RunWith(Parameterized.class)
-public class LRUMaintenanceTest {
+public class GLRUMaintenanceTest {
 
-	private static Logger logger = LoggerFactory.getLogger(LRUMaintenanceTest.class);
+	private static Logger logger = LoggerFactory.getLogger(GLRUMaintenanceTest.class);
 	private static int numberOfInstances=1;//number of remote service providers 
 	private static int numberOfFusekiChange=1;//this is intended to keep track of the object values for testing
 	private static int FusekiServerDataSize=20;
@@ -101,7 +101,7 @@ public class LRUMaintenanceTest {
 		 * if we set the update budget to 1 only first element of each evaluation will be synchronized with remote
 		 * and the rest will be according to previous window evlauation
 		 */
-		prop.put("jena.service.cache.maintenance.type", "lru");
+		prop.put("jena.service.cache.maintenance.type", "global-lru");
 		Config.INSTANCE.setConfigParams(prop);		
 		
 	}
@@ -129,7 +129,7 @@ public class LRUMaintenanceTest {
 	private long[] input;
 	private int width, slide;
 	private List<List<TestRDFTupleResults>> expected;//each evaluation results a list of RDFTuple
-	public LRUMaintenanceTest(long[] input, int width, int slide, List<List<TestRDFTupleResults>> expected){
+	public GLRUMaintenanceTest(long[] input, int width, int slide, List<List<TestRDFTupleResults>> expected){
 		this.input = input;
 		this.width = width;
 		this.slide = slide;
