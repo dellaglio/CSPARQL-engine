@@ -55,8 +55,12 @@ public class OpServiceCache extends OpService {
 		subOp = new OpSlice(subOp, Long.MIN_VALUE /*query.getOffset()*/ /*start*/, length/*query.getLimit()*//*length*/) ;
 		query = OpAsQuery.asQuery(subOp);
 
-		logger.debug("query for caching is >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + query);
+		//adding the change rate sub-query to the query from service
+		
+		
+		//logger.debug("query for caching is >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + query);
 
+		
 		QueryExecution qe = QueryExecutionFactory.sparqlService(
 				endPoint.getURI(), query);
 		ResultSet rs = qe.execSelect();	

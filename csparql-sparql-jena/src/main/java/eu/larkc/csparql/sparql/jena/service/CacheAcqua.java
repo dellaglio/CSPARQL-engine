@@ -45,24 +45,7 @@ import com.hp.hpl.jena.sparql.engine.binding.BindingUtils;
 //
 public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 
-	private class TimedKey implements Comparable<TimedKey>{
-		Binding key;
-		long timeStamp;
-		public TimedKey(Binding b, long t){
-			key=b;
-			timeStamp=t;
-		}
-		public int compareTo(TimedKey o) {
-			final int BEFORE = -1;
-		    final int EQUAL = 0;
-		    final int AFTER = 1;
-			if (this.timeStamp>o.timeStamp)
-				return AFTER;
-			else if (this.timeStamp<o.timeStamp)
-				return BEFORE;
-			else return EQUAL;
-		}		
-	}
+	
 //	private int cacheSize=50;
 	private static Logger logger = LoggerFactory.getLogger(CacheAcqua.class);
 	
