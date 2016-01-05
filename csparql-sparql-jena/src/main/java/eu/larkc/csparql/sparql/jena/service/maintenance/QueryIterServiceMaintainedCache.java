@@ -1,7 +1,10 @@
 package eu.larkc.csparql.sparql.jena.service.maintenance;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -20,11 +23,11 @@ import com.hp.hpl.jena.sparql.engine.iterator.QueryIterPlainWrapper;
 import com.hp.hpl.jena.sparql.engine.iterator.QueryIterRepeatApply;
 import com.hp.hpl.jena.sparql.engine.main.QC;
 import com.hp.hpl.jena.sparql.util.Context;
+import com.hp.hpl.jena.sparql.util.Symbol;
 
 import eu.larkc.csparql.common.config.Config;
 import eu.larkc.csparql.sparql.jena.service.CacheAcqua;
 import eu.larkc.csparql.sparql.jena.service.OpServiceCache;
-import eu.larkc.csparql.sparql.jena.service.QueryIterServiceCache;
 import eu.larkc.csparql.sparql.jena.service.maintenance.policies.MaintenancePolicy;
 
 public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
@@ -32,20 +35,58 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 	private static Logger logger = LoggerFactory.getLogger(QueryIterServiceMaintainedCache.class);
 	private CacheAcqua serviceCache;
 	private OpService opService;
+	
+	/*private List<Vertex> currentVertexInWindow;
+	private BiadjacencyMatrix subgraphOfCurrentWindow;
+	private List<Vertex> expriedVsInCurrentWindow;
+	private BiadjacencyMatrix subgraphForUpating;*/
+	
 	private static int width;
 	private static int slide;
 	private static long tnow;
+	
 	QueryIterator outerContentIterator = null;
 
 	Set<Binding> electedList = new HashSet<Binding>();
 	public MaintenancePolicy mypolicy = null;
+	
 	private HashMap<Binding, Long> currentBindingsInWindow;
 	
 	public HashMap<Binding, Long> getCurrentBindingOfWindow(){
 		return currentBindingsInWindow;
 	}	
 	
+	public List<Binding> getExpiredWindowBindings() {
+		List<Binding> result = new ArrayList<Binding>();
+		for (Binding curV : currentBindingsInWindow.keySet()) {
+			//int originalID = curV.originalVertex.getIntID();
+			if (isExpired(curV))
+				result.add(curV);
+
+		}
+		return result;
+	}
+	public List<Binding> getExpiredBindings(Collection<Binding> collection) {
+		List<Binding> result = new ArrayList<Binding>();
+		for (Binding curV : collection) {
+			//int originalID = curV.originalVertex.getIntID();
+			if (isExpired(curV))
+				result.add(curV);
+
+		}
+		return result;
+	}
 	
+	
+	
+	protected boolean isExpired(Binding key) {
+		long bbt = serviceCache.getCacheBBT().get(key);
+		if (bbt < tnow) {
+			return true;
+		} else {
+			return false;
+		}
+	}
 	
 	private HashMap<Binding, Long> getCurrentBindingsInWindow(QueryIterator input) {
 		HashMap<Binding, Long> results = new HashMap<Binding, Long>();
@@ -78,10 +119,10 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 		serviceCache = opService.getCache();
 		this.opService = opService ;	
 		Context ec = context.getContext();
-		/*QueryIterServiceMaintainedCache.width = Integer.parseInt(ec.getAsString(Symbol.create("acqua:width")));
+		QueryIterServiceMaintainedCache.width = Integer.parseInt(ec.getAsString(Symbol.create("acqua:width")));
 		QueryIterServiceMaintainedCache.slide = Integer.parseInt(ec.getAsString(Symbol.create("acqua:slide")));
 		QueryIterServiceMaintainedCache.tnow = Long.parseLong(ec.getAsString(Symbol.create("acqua:tnow")));
-		*/currentBindingsInWindow = getCurrentBindingsInWindow(input);
+		currentBindingsInWindow = getCurrentBindingsInWindow(input);
 		//logger.debug("filled currentbinding array with window content. size is "+currentBindingsInWindow.size());
 		outerContentIterator = new QueryIterPlainWrapper(currentBindingsInWindow.keySet().iterator());
 		
@@ -107,7 +148,6 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 
 			serviceCache.put(serviceCache.getKeyBinding(b), tempResults);
 			totalTripleUpdatedInCache += tempResults.size();
-
 		}	
 
 	}
@@ -165,6 +205,27 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 	public Set<Binding> getTopKGLRU(int budget) {		
 		return serviceCache.getGLRUTopK(budget);		
 	}
+
+	public static long getTnow() {
+		return tnow;
+	}
+
+	public HashMap<Binding, Integer> getChangeRate() {
+		return serviceCache.getCacheChangeRate();
+	}
 	
+	public static int getSlideLength(){
+		return slide;
+	}
+	
+	public static int getWindowLength(){
+		return width;
+	}
+
+	public long getBBT(Binding originalID) {
+		// TODO Auto-generated method stub
+		return serviceCache.getCacheBBT().get(originalID);
+	}
+
 }
 

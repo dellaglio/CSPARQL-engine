@@ -11,8 +11,6 @@ import com.hp.hpl.jena.sparql.engine.main.iterator.QueryIterService;
 
 import eu.larkc.csparql.common.config.Config;
 //import com.hp.hpl.jena.sparql.util.Symbol;
-import eu.larkc.csparql.sparql.jena.service.maintenance.QueryIterServiceCacheFIFO;
-import eu.larkc.csparql.sparql.jena.service.maintenance.QueryIterServiceCacheLRU;
 import eu.larkc.csparql.sparql.jena.service.maintenance.QueryIterServiceMaintainedCache;
 import eu.larkc.csparql.sparql.jena.service.maintenance.policies.GLRUMaintenance;
 import eu.larkc.csparql.sparql.jena.service.maintenance.policies.LRUMaintenance;
@@ -34,7 +32,7 @@ public class OpExecutorAcqua extends OpExecutor {
 		if(opService instanceof OpServiceCache){
 			if (Config.INSTANCE.isJenaCacheUsingMaintenance()){
 				if(true){// TODO: check if it is a 1-1 mapping
-					//logger.error("????????????????????????????????????????????????????????????        i arrived the maintenance step");
+					//logger.debug("????????????????????????????????????????????????????????????        i arrived the maintenance step");
 					QueryIterServiceMaintainedCache mc=new QueryIterServiceMaintainedCache(input, (OpServiceCache)opService, execCxt);
 					//mc.readChangeRatesForMaintenance();
 					switch (Config.INSTANCE.getMaintenanceType()) {

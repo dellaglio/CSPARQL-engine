@@ -115,7 +115,8 @@ public class CacheTests {
 		prop.put("jena.service.cache.enabled", true);
 		prop.put("jena.service.cache.fillJenaServiceCacheAtStart",true);
 		prop.put("jena.service.cache.size",FusekiServerDataSize);
-		prop.put("jena.service.cache.maintenance.enabled", false);
+		prop.put("jena.service.cache.maintenance.enabled", true);
+		prop.put("jena.service.cache.maintenance.enabled", true);
 		Config.INSTANCE.setConfigParams(prop);
 	}
 

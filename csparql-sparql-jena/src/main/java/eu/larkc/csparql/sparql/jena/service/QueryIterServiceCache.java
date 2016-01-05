@@ -1,6 +1,5 @@
 package eu.larkc.csparql.sparql.jena.service;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -23,8 +22,8 @@ import com.hp.hpl.jena.sparql.engine.main.QC;
 public class QueryIterServiceCache  extends QueryIterRepeatApply{
 	
 		private static Logger logger = LoggerFactory.getLogger(QueryIterServiceCache.class);
-		private CacheAcqua serviceCache;
-		private OpService opService;
+		protected CacheAcqua serviceCache;
+		protected OpService opService;
 		
 		public QueryIterServiceCache(QueryIterator input, OpServiceCache opService, ExecutionContext context){
 			super(input, context) ;

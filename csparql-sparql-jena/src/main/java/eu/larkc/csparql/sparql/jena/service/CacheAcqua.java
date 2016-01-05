@@ -43,9 +43,7 @@ import com.hp.hpl.jena.sparql.engine.binding.BindingUtils;
 //to retrive values from cache
 //therefore one solution for each cache entry we should specify the corresponding key and value vars.
 //
-public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
-
-	
+public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {	
 //	private int cacheSize=50;
 	private static Logger logger = LoggerFactory.getLogger(CacheAcqua.class);
 	
@@ -267,4 +265,12 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 		return result;
 	}
 
+	public HashMap<Binding, Long> getCacheBBT() {
+		
+		return updateBBT;
+	}
+public HashMap<Binding, Integer> getCacheChangeRate() {
+		
+		return cacheChangeRate;
+	}
 }
