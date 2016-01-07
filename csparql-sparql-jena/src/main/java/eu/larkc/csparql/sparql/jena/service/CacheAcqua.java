@@ -44,9 +44,9 @@ import com.hp.hpl.jena.sparql.engine.binding.BindingUtils;
 //therefore one solution for each cache entry we should specify the corresponding key and value vars.
 //
 public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {	
-//	private int cacheSize=50;
+	//	private int cacheSize=50;
 	private static Logger logger = LoggerFactory.getLogger(CacheAcqua.class);
-	
+
 	private Set<Var> keys; 
 	private Set<Var> values;
 	private HashMap<Binding, Long> updateBBT;
@@ -60,7 +60,7 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 		cacheChangeRate=new HashMap<Binding, Integer>();
 		lastUpdateTimeOfKey=new HashMap<Binding,Long>();
 	}
-	
+
 	public CacheAcqua(int cacheSize, Set<Var> keys, Set<Var> values){
 		super(0.8f, cacheSize);
 		this.keys=keys;
@@ -68,9 +68,9 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 		updateBBT=new HashMap<Binding, Long>();		
 		cacheChangeRate=new HashMap<Binding, Integer>();
 		lastUpdateTimeOfKey=new HashMap<Binding,Long>();
-//		this.cacheSize = cacheSize;
+		//		this.cacheSize = cacheSize;
 	}
-	
+
 	public void init(QueryRunner qr) {
 		keys=qr.computeCacheKeyVars();
 		values=qr.computeCacheValueVars();
@@ -83,30 +83,30 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 
 		but it should be actually filled from 
 		remote data provider according to query*/ 	 
-//		fillCache(qr);
+		//		fillCache(qr);
 	}
 
-//	private void fillCache(QueryRunner qr) {
-//		
-//		for(int i=0;i<qr.extractServiceClauses();i++){
-//			OpService opService=qr.getSERVICEEndpointURI().get(i);
-//			Node endpoint = opService.getService();
-//			//System.out.println("endpoint>>>>>>>"+endpoint.toString()+opService);
-//			Query query = OpAsQuery.asQuery(opService.getSubOp());
-//			QueryExecution qe = QueryExecutionFactory.sparqlService(
-//					endpoint.getURI(), query);
-//			ResultSet rs = qe.execSelect();	
-//			while (rs.hasNext() && super.size()!=cacheSize) {
-//				QuerySolution qs = rs.next();//nextSolution();
-//				BindingProjectNamed solb = (BindingProjectNamed) BindingUtils
-//						.asBinding(qs);
-//				System.out.println("put in cache>>>>>>>"+solb);
-//				put(qr.getKeyBinding(solb),qr.getValueBinding(solb));
-//				//printContent();
-//			}				
-//		}	
-//			
-//	}
+	//	private void fillCache(QueryRunner qr) {
+	//		
+	//		for(int i=0;i<qr.extractServiceClauses();i++){
+	//			OpService opService=qr.getSERVICEEndpointURI().get(i);
+	//			Node endpoint = opService.getService();
+	//			//System.out.println("endpoint>>>>>>>"+endpoint.toString()+opService);
+	//			Query query = OpAsQuery.asQuery(opService.getSubOp());
+	//			QueryExecution qe = QueryExecutionFactory.sparqlService(
+	//					endpoint.getURI(), query);
+	//			ResultSet rs = qe.execSelect();	
+	//			while (rs.hasNext() && super.size()!=cacheSize) {
+	//				QuerySolution qs = rs.next();//nextSolution();
+	//				BindingProjectNamed solb = (BindingProjectNamed) BindingUtils
+	//						.asBinding(qs);
+	//				System.out.println("put in cache>>>>>>>"+solb);
+	//				put(qr.getKeyBinding(solb),qr.getValueBinding(solb));
+	//				//printContent();
+	//			}				
+	//		}	
+	//			
+	//	}
 
 	public Set<Var> getKeyVars(){
 		return keys;
@@ -146,13 +146,19 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 	public Set<Binding> get(Binding key){
 		return super.get(key);
 	}
-	
-	public Set<Binding> put(Binding key, Set<Binding> value){
+	/*
+	 * this put function is called in QueryIterServiceMaintenance at the query evaluation time.
+	 * therefore the currentCEP time is also needed to revise BBT
+	 */
+	public Set<Binding> put(Binding key, Set<Binding> value, Long tnow){
 		//logger.debug("????????????????????????????????????????????????filling the cache with "+key+"????????"+ value);
 		lastUpdateTimeOfKey.put(key, System.currentTimeMillis());
+		//maintaining the cached values bbt should be updated
+		long cr=cacheChangeRate.get(key);
+		updateBBT.put(key,((tnow / cr)+1) * cr);	
 		return super.put(key, value);
 	}
-	
+
 	public Set<Binding> put(Binding key, Binding value){
 		//logger.debug("????????????????????????????????????????????????filling the cache with "+key+"????????"+ value);
 		lastUpdateTimeOfKey.put(key, System.currentTimeMillis());
@@ -160,12 +166,22 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 		v.add(value);
 		return super.put(key, v);
 	}
-	
+	/*
+	 * this put function is called by opServiceCache at the query registeration time 
+	 * 
+	 */
 	public Set<Binding> put(Binding b){
 		//logger.debug("????????????????????????????????????????????????filling the cache with "+b);
 		Binding keyBm = getKeyBinding(b);
 		lastUpdateTimeOfKey.put(keyBm, System.currentTimeMillis());
 		Binding valueBm = getValueBinding(b);
+
+		if(b.get(Var.alloc("x"))!=null)//this if is always true --> filling cache for the first time with changerate value
+		{
+			cacheChangeRate.put(keyBm, Integer.parseInt(b.get(Var.alloc("x")).getLiteralValue().toString()));	
+			updateBBT.put(keyBm, Long.MIN_VALUE);//all elements are expired at the begining
+			//updateBBT.put(keyBm, Long.MAX_VALUE);//all elements are fresh at the begining
+		}
 
 		Set<Binding> prevBinding=super.get(keyBm);
 		if(prevBinding!=null){
@@ -178,24 +194,24 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 			//logger.debug("????????????????????????????????????????????????filling the cache with "+keyBm+"????????"+ bhs);
 			return super.put(keyBm, bhs);
 		}		
-		
+
 	}
-	
+
 	/*
 	 * get top k for LRU maintenance of the whole cache
 	 */	
 	public Set<Binding> getGLRUTopK(int budget){
-		logger.debug("????????????????????last update time of keys "+lastUpdateTimeOfKey);		
+		//logger.debug("????????????????????last update time of keys "+lastUpdateTimeOfKey);		
 		Set<Binding> result=new HashSet<Binding>();
 		Set<Entry<Binding,Long>> set = lastUpdateTimeOfKey.entrySet();
-	    List<Entry<Binding,Long>> list = new ArrayList<Entry<Binding,Long>>(
-	                set);
+		List<Entry<Binding,Long>> list = new ArrayList<Entry<Binding,Long>>(
+				set);
 		Collections.sort(list, new Comparator<Map.Entry<Binding, Long>>() {
-            public int compare(Map.Entry<Binding, Long> o1,
-                    Map.Entry<Binding, Long> o2) {
-                return o1.getValue().compareTo(o2.getValue());
-            }
-        });
+			public int compare(Map.Entry<Binding, Long> o1,
+					Map.Entry<Binding, Long> o2) {
+				return o1.getValue().compareTo(o2.getValue());
+			}
+		});
 		for (int y=0;y<budget;y++){
 			result.add(list.get(y).getKey());
 		}
@@ -204,23 +220,23 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 	public void printContent(){
 		System.out.println("START PRINTING CACHE CONTENT");
 		Iterator<Binding> it = super.keys();
-        while(it.hasNext()){
-        	Binding temp = it.next();
-        	System.out.println(temp+" "+super.get(temp));
-        }
-        System.out.println("END PRINTING CACHE CONTENT");
-		
+		while(it.hasNext()){
+			Binding temp = it.next();
+			System.out.println(temp+" "+super.get(temp));
+		}
+		System.out.println("END PRINTING CACHE CONTENT");
+
 	}
 
 	public void printLastUpdateTimeOfContent(){
 		System.out.println("START PRINTING CACHE CONTENT LAST UPDATE TIME");
 		Iterator<Binding> it = lastUpdateTimeOfKey.keySet().iterator();
-        while(it.hasNext()){
-        	Binding temp = it.next();
-        	System.out.println(temp+" "+lastUpdateTimeOfKey.get(temp));
-        }
-        System.out.println("END PRINTING CACHE CONTENT LAST UPDATE TIME");
-		
+		while(it.hasNext()){
+			Binding temp = it.next();
+			System.out.println(temp+" "+lastUpdateTimeOfKey.get(temp));
+		}
+		System.out.println("END PRINTING CACHE CONTENT LAST UPDATE TIME");
+
 	}
 	private class EntrySet implements Comparable<EntrySet>{
 
@@ -235,12 +251,12 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 		}
 		@Override
 		public int compareTo(EntrySet o) {
-			
+
 			return (int)( this.t - o.t);
 		}
-		
+
 	}
-	
+
 	/*
 	 * get top k for LRU maintenance for the a subset of cache that has compatible mappings in window
 	 */	
@@ -249,13 +265,13 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 		logger.debug("????????????????????last update time of keys "+lastUpdateTimeOfKey);
 		Iterator<Binding> bIt= keySet.iterator();
 		SortedSet<EntrySet> subList = new TreeSet<EntrySet>();
-		
+
 		while(bIt.hasNext()){
-				Binding curKey = bIt.next();
-				long timeOfLastUpdate = lastUpdateTimeOfKey.get(getKeyBinding(curKey));
-				subList.add(new EntrySet(getKeyBinding(curKey),timeOfLastUpdate));
-			}
-		
+			Binding curKey = bIt.next();
+			long timeOfLastUpdate = lastUpdateTimeOfKey.get(getKeyBinding(curKey));
+			subList.add(new EntrySet(getKeyBinding(curKey),timeOfLastUpdate));
+		}
+
 		Set<Binding> result=new HashSet<Binding>();
 		int i=0;
 		while(i<budget){
@@ -266,11 +282,13 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 	}
 
 	public HashMap<Binding, Long> getCacheBBT() {
-		
+
 		return updateBBT;
 	}
-public HashMap<Binding, Integer> getCacheChangeRate() {
-		
+	public HashMap<Binding, Integer> getCacheChangeRate() {
+
 		return cacheChangeRate;
 	}
+
+
 }

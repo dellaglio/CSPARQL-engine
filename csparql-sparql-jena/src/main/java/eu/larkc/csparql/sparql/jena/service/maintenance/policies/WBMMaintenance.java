@@ -25,9 +25,9 @@ public class WBMMaintenance implements MaintenancePolicy {
 			long lastTime = currentWindowBindingsTS.get(e);			
 			// for each fund calculate the score
 			lastTime += qi.getWindowLength()*1000;
-			int changeRate = cacheChangeRates.get(e);
+			int changeRate = cacheChangeRates.get(qi.getkeyBinding(e));
 			//computing V and L
-			UpdateEvent tempEvent = UpdateEvent.planOneUpdateEvent(e, changeRate, lastTime, qi.getTnow(),qi.getBBT(e));
+			UpdateEvent tempEvent = UpdateEvent.planOneUpdateEvent(e, changeRate, lastTime, qi.getTnow(),qi.getBBT(qi.getkeyBinding(e)));
 			//add the update event to the sorted list
 			results.add(tempEvent);
 			//logger.debug("tempEvent:" + tempEvent + " scores " + tempEvent.fundToScore + " originalScore " + tempEvent.scoreForUpdate);

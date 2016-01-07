@@ -55,7 +55,7 @@ public class OpExecutorAcqua extends OpExecutor {
 						mc.mypolicy=new GLRUMaintenance();
 						break;
 					}
-					case "WBM":{
+					case "wbm":{
 						mc.mypolicy=new WBMMaintenance();
 						break;
 					}

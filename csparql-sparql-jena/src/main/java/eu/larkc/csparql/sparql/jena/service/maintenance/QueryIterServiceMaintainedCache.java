@@ -35,27 +35,27 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 	private static Logger logger = LoggerFactory.getLogger(QueryIterServiceMaintainedCache.class);
 	private CacheAcqua serviceCache;
 	private OpService opService;
-	
+
 	/*private List<Vertex> currentVertexInWindow;
 	private BiadjacencyMatrix subgraphOfCurrentWindow;
 	private List<Vertex> expriedVsInCurrentWindow;
 	private BiadjacencyMatrix subgraphForUpating;*/
-	
+
 	private static int width;
 	private static int slide;
 	private static long tnow;
-	
+
 	QueryIterator outerContentIterator = null;
 
 	Set<Binding> electedList = new HashSet<Binding>();
 	public MaintenancePolicy mypolicy = null;
-	
+
 	private HashMap<Binding, Long> currentBindingsInWindow;
-	
+
 	public HashMap<Binding, Long> getCurrentBindingOfWindow(){
 		return currentBindingsInWindow;
 	}	
-	
+
 	public List<Binding> getExpiredWindowBindings() {
 		List<Binding> result = new ArrayList<Binding>();
 		for (Binding curV : currentBindingsInWindow.keySet()) {
@@ -76,18 +76,20 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 		}
 		return result;
 	}
-	
-	
-	
+
+
+
 	protected boolean isExpired(Binding key) {
-		long bbt = serviceCache.getCacheBBT().get(key);
+
+		try{long bbt = serviceCache.getCacheBBT().get(serviceCache.getKeyBinding(key));
 		if (bbt < tnow) {
 			return true;
 		} else {
 			return false;
 		}
+		}catch(Exception e){logger.error("??????????????????"+serviceCache.getKeyBinding(key)); return false;}
 	}
-	
+
 	private HashMap<Binding, Long> getCurrentBindingsInWindow(QueryIterator input) {
 		HashMap<Binding, Long> results = new HashMap<Binding, Long>();
 		int i = 0;
@@ -113,7 +115,7 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 		//System.out.println(results.keySet().size());
 		return results;
 	}
-	
+
 	public QueryIterServiceMaintainedCache(QueryIterator input, OpServiceCache opService, ExecutionContext context){
 		super(input, context) ;
 		serviceCache = opService.getCache();
@@ -125,16 +127,18 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 		currentBindingsInWindow = getCurrentBindingsInWindow(input);
 		//logger.debug("filled currentbinding array with window content. size is "+currentBindingsInWindow.size());
 		outerContentIterator = new QueryIterPlainWrapper(currentBindingsInWindow.keySet().iterator());
-		
+
 	}
 
 	public void executePolicy() {
-		//logger.debug(">>>>>>>>>>>>>>>>>>>"+currentBindingsInWindow.size());
+		logger.debug(">>>>>>>>>>>>>>>>>>>currentBindingsInWindow "+currentBindingsInWindow);
 		electedList = this.mypolicy.updatePolicy(this, Config.INSTANCE.getBudget());
+		logger.debug("???????????????????elected List "+electedList);
+		
 		Set<Binding> resultToUpdateInCache = new HashSet<Binding>();
 		int totalTripleUpdatedInCache = 0;
-		
-		
+
+
 		for (Binding b : electedList) {
 			//logger.debug("??????????????????????????????????????????????"+b);
 			Set<Binding> tempResults = MaintainKey(b);
@@ -143,27 +147,30 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 			if (tempBsforUpdate.size() != tempResults.size()) {
 				throw new RuntimeException("querying results number is not equal to the results number in local");
 			}
-			
+
 			//serviceCache.updateBBT(b, tnow);
 
-			serviceCache.put(serviceCache.getKeyBinding(b), tempResults);
+			serviceCache.put(serviceCache.getKeyBinding(b), tempResults,tnow);
 			totalTripleUpdatedInCache += tempResults.size();
 		}	
 
 	}
-	
+
 
 	private Set<Binding> MaintainKey(Binding outerBinding) {
-		logger.debug("maintaining "+outerBinding);
+		//logger.debug("maintaining "+outerBinding);
 		Op op = QC.substitute(opService, outerBinding) ;
-        QueryIterator qIter = Service.exec((OpService)op, getExecContext().getContext()) ;
+		QueryIterator qIter = Service.exec((OpService)op, getExecContext().getContext()) ;
 
-        Set<Binding> values = new HashSet<Binding>();
-        while(qIter.hasNext()){
-        	Binding b = qIter.nextBinding();
-        	values.add(serviceCache.getValueBinding(b));
-        }
-        return values;
+		Set<Binding> values = new HashSet<Binding>();
+		while(qIter.hasNext()){
+			Binding b = qIter.nextBinding();
+			values.add(serviceCache.getValueBinding(b));
+		}
+		return values;
+	}
+	public Binding getkeyBinding(Binding b){
+		return serviceCache.getKeyBinding(b);
 	}
 	protected QueryIterator getInput() {
 		return outerContentIterator;
@@ -183,12 +190,12 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 	        	values.add(serviceCache.getValueBinding(b));
 	        }
 	        //if(values.size()!=0)
-*/	        	
+			 */	        	
 			return null;
 			//serviceCache.put(key, MaintainKey(outerBinding));
-	        
-		} else logger.debug(key+" windows entry found matching entry in cache");
-		
+
+		}// else logger.debug(key+" windows entry found matching entry in cache");
+
 		Set<Binding> ret = serviceCache.get(key);
 		QueryIterator qIter = new QueryIterPlainWrapper(ret.iterator());			
 		QueryIterator qIter2 = new QueryIterCommonParent(qIter, outerBinding, getExecContext()) ;
@@ -201,7 +208,7 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 	public Set<Binding> getTopKLRUInWindow(Set<Binding> keySet, int budget) {		
 		return serviceCache.getTopKLRU(keySet,budget);		
 	}
-	
+
 	public Set<Binding> getTopKGLRU(int budget) {		
 		return serviceCache.getGLRUTopK(budget);		
 	}
@@ -213,11 +220,11 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 	public HashMap<Binding, Integer> getChangeRate() {
 		return serviceCache.getCacheChangeRate();
 	}
-	
+
 	public static int getSlideLength(){
 		return slide;
 	}
-	
+
 	public static int getWindowLength(){
 		return width;
 	}

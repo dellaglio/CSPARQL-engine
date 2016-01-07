@@ -73,7 +73,7 @@ public class CsparqlEngineImpl implements Observer, CsparqlEngine {
 	private SparqlEngine sparqlEngine = null;
 	private Reasoner reasoner = null;
 
-	protected final Logger logger = LoggerFactory.getLogger(CsparqlEngineImpl.class);
+	private static Logger logger = LoggerFactory.getLogger(CsparqlEngineImpl.class);
 
 	public Collection<CSparqlQuery> getAllQueries() {
 		return this.queries;
@@ -300,13 +300,14 @@ public class CsparqlEngineImpl implements Observer, CsparqlEngine {
 		CSparqlQuery query = null;
 		// Split continuous part from static part
 		try {
+			//logger.debug("??"+command);
 			query = t.translate(command);
 		} catch (final TranslationException e) {
 			throw new ParseException(e.getMessage(), 0);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		logger.debug("CEP query: {}", query.getCepQuery().getQueryCommand());
+		
 		logger.debug("SPARQL query: {}", query.getSparqlQuery().getQueryCommand().replace("\n", "").replace("\r", ""));
 		
 		// Parse sparql(static) query
@@ -578,8 +579,12 @@ public class CsparqlEngineImpl implements Observer, CsparqlEngine {
 
 		if (count == 0)
 			return;
-
-		logger.debug("~~~~~~~~~~~~~~~~~~~~START OF QUERY EVALUATION");
+		logger.debug("~~~~~~~~~~~~~~~~~~~~START OF QUERY EVALUATION"+csparqlquery.getSparqlQuery());
+		String CepQuery=csparqlquery.getCepQuery().getQueryCommand();
+		String w= CepQuery.substring(CepQuery.indexOf("win:time(")+9,  CepQuery.indexOf(')', CepQuery.indexOf("win:time("))).split(" ")[0];
+		String slide= CepQuery.substring(CepQuery.indexOf("every"),  CepQuery.length()).split(" ")[1];
+		//logger.debug("??????????????????????????????????????????"+w+"?????????????"+slide);
+		this.sparqlEngine.setARQCurrentTime(this.cepEngine.getCurrentTime()+" "+w+" "+slide);
 		final RDFTable result = this.sparqlEngine.evaluateQuery(csparqlquery.getSparqlQuery());
 		logger.debug("~~~~~~~~~~~~~~~~~~~~END OF QUERY EVALUATION");
 		

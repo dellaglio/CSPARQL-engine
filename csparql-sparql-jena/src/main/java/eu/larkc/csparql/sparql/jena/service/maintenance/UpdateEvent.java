@@ -2,10 +2,17 @@ package eu.larkc.csparql.sparql.jena.service.maintenance;
 
 import java.util.Comparator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.hp.hpl.jena.sparql.engine.binding.Binding;
+
+import eu.larkc.csparql.sparql.jena.JenaQuery;
 
 
 public class UpdateEvent {
+	private static Logger logger = LoggerFactory.getLogger(UpdateEvent.class);
+
 	//public int IDToUpdateInBKG;
 	public Binding BKGBindingToUpdate;
 	public int changeRate;
@@ -19,6 +26,7 @@ public class UpdateEvent {
 		long tempExpirationTimeAfterScheduledTime = this.scheduledUpdateTime + changeRate - currentTempEvluationTime;
 		int validSlideAfterScheduledTime = (int) Math.ceil((double) tempExpirationTimeAfterScheduledTime
 				/ (double) (QueryIterServiceMaintainedCache.getSlideLength() * 1000L));
+		logger.debug("V= "+validSlideAfterScheduledTime);
 		int score = Math.min(validSlideAfterScheduledTime, remainingEva);
 		// score could be zero
 		return score;
@@ -44,6 +52,7 @@ public class UpdateEvent {
 			int changeRate, long leavingWindowTime, long evaluationTime,long bbt) {
 		long timeInFrontOfTheStock = leavingWindowTime - evaluationTime;
 		int evaInFrontOfTheStock = (int) Math.ceil((double) timeInFrontOfTheStock / (double) (QueryIterServiceMaintainedCache.getSlideLength() * 1000L));
+		logger.debug(originalID+ "L= "+evaInFrontOfTheStock);
 		UpdateEvent tempEvent = new UpdateEvent(originalID, changeRate, evaluationTime, evaInFrontOfTheStock, evaluationTime,bbt);
 		// score can be 0, since a data can leave the window before it expires
 		// if (tempEvent.scoreForUpdate == 0 && evaluationTime !=
@@ -77,12 +86,12 @@ public class UpdateEvent {
 			public int compare(UpdateEvent o1, UpdateEvent o2) {
 				if (Integer.compare(o1.scoreForUpdate, o2.scoreForUpdate) != 0)
 					return Integer.compare(o1.scoreForUpdate, o2.scoreForUpdate);
-				// else if (Integer.compare(o1.scheduledUpdateTime,
-				// o2.scheduledUpdateTime) != 0)
-				// return Integer.compare(o2.scheduledUpdateTime,
-				// o1.scheduledUpdateTime);
+				else if (Long.compare(o1.scheduledUpdateTime,
+						o2.scheduledUpdateTime) != 0)
+					return Long.compare(o2.scheduledUpdateTime,
+							o1.scheduledUpdateTime);
 				else
-					return 0;//Integer.compare(o1.IDToUpdateInBKG, o2.IDToUpdateInBKG);
+					return Integer.compare(o1.remainingEva, o2.remainingEva);
 			}
 		};
 		public static Comparator<UpdateEvent> SCHEDULEDTIME = new Comparator<UpdateEvent>() {
@@ -97,7 +106,7 @@ public class UpdateEvent {
 				// RuntimeException("at one time update an data twice in SCHEDULEDTIME comparator");
 				// }
 				else
-					return 0;//Integer.compare(o1.IDToUpdateInBKG, o2.IDToUpdateInBKG);
+					return 0;//Integer.compare(o1.remainingEva, o2.remainingEva);
 			}
 		};
 	}

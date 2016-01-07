@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.jena.atlas.io.IndentedWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
@@ -31,6 +33,8 @@ import com.hp.hpl.jena.sparql.engine.binding.BindingFactory;
 import com.hp.hpl.jena.sparql.engine.binding.BindingMap;
 import com.hp.hpl.jena.vocabulary.RDF;
 
+import eu.larkc.csparql.sparql.jena.service.maintenance.QueryIterServiceMaintainedCache;
+
 public class QueryRunner {
 	private Model model;
 
@@ -41,8 +45,9 @@ public class QueryRunner {
 	private int serviceCount;
 	private Set<Var> keys;
 	private Set<Var> values;
+	private static Logger logger = LoggerFactory.getLogger(QueryRunner.class);
 	
-	public QueryRunner(String queryString, Model localData){
+	public QueryRunner(String queryString, Model localData){		
 		query = QueryFactory.create(queryString);
 		model = localData;
 		parsedQuery = Algebra.compile(query);
@@ -129,10 +134,10 @@ public class QueryRunner {
 				Set<Var> intersection = new HashSet<Var>(serviceVars); // use the copy constructor
 				intersection.retainAll(otherVars);
 				this.keys.addAll(intersection);
-				System.out.println("____________keys vars of query "+keys);
+				logger.debug("____________keys vars of query "+keys);
 				serviceVars.removeAll(intersection);
 				this.values.addAll(serviceVars);	
-				System.out.println("___________value vars of query "+values);
+				logger.debug("___________value vars of query "+values);
 				
 	}
 

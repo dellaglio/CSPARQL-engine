@@ -76,57 +76,57 @@ public class JenaQuery implements SparqlQuery {
 		query = QueryFactory.create(cmd);
 		optimizeQuery();		
 	}
-	
+
 	public Op getRootOp(){
 		return rootOp;
 	}
-	
+
 	public void optimizeQuery(){
 		Query oldQuery =  query;
 
 		Op op = Algebra.compile(oldQuery);
 		rootOp = Algebra.optimize(op);
-		
+
 		if(Config.INSTANCE.isJenaUsingServiceCaching() ){
 			if(countServiceClauses()==1){
-			Transform tb = new TransformCopy(){
-				@Override
-				public Op transform(OpService opService, Op subOp) {
-					return new OpServiceCache(opService.getService(), subOp, opService.getServiceElement(), opService.getSilent(),computeCacheKeyVars(),computeCacheValueVars());
-				}
-			};
-			rootOp = Transformer.transform(tb, rootOp);
+				Transform tb = new TransformCopy(){
+					@Override
+					public Op transform(OpService opService, Op subOp) {
+						return new OpServiceCache(opService.getService(), subOp, opService.getServiceElement(), opService.getSilent(),computeCacheKeyVars(),computeCacheValueVars());
+					}
+				};
+				rootOp = Transformer.transform(tb, rootOp);
 			}else{
 				logger.warn("the Query has more than a SERVICE clause, Caching is disabled!!");
 			}
-//			rootOp.output(IndentedWriter.stdout);
+			//			rootOp.output(IndentedWriter.stdout);
 		}		
-		
-//		query = OpAsQuery.asQuery(op);
-		
-//		if(oldQuery.isAskType())
-//			query.setQueryAskType();
-//		else if(oldQuery.isDescribeType())
-//			query.setQueryDescribeType();
-//		else if(oldQuery.isConstructType()){
-//			query.setQueryConstructType();
-//			query.setConstructTemplate(oldQuery.getConstructTemplate());
-//		}
-//		
-//		query.setPrefixMapping(oldQuery.getPrefixMapping());
-//		
-//		DatasetDescription dd = new DatasetDescription(oldQuery.getGraphURIs(), oldQuery.getNamedGraphURIs());
-//		
-//		if(oldQuery.getGraphURIs()!=null)
-//			query.getDatasetDescription().addAllDefaultGraphURIs(oldQuery.getGraphURIs());
-//		if(oldQuery.getNamedGraphURIs()!=null)
-//			query.getDatasetDescription().addAllNamedGraphURIs(oldQuery.getNamedGraphURIs());
-//		System.out.println(query);
+
+		//		query = OpAsQuery.asQuery(op);
+
+		//		if(oldQuery.isAskType())
+		//			query.setQueryAskType();
+		//		else if(oldQuery.isDescribeType())
+		//			query.setQueryDescribeType();
+		//		else if(oldQuery.isConstructType()){
+		//			query.setQueryConstructType();
+		//			query.setConstructTemplate(oldQuery.getConstructTemplate());
+		//		}
+		//		
+		//		query.setPrefixMapping(oldQuery.getPrefixMapping());
+		//		
+		//		DatasetDescription dd = new DatasetDescription(oldQuery.getGraphURIs(), oldQuery.getNamedGraphURIs());
+		//		
+		//		if(oldQuery.getGraphURIs()!=null)
+		//			query.getDatasetDescription().addAllDefaultGraphURIs(oldQuery.getGraphURIs());
+		//		if(oldQuery.getNamedGraphURIs()!=null)
+		//			query.getDatasetDescription().addAllNamedGraphURIs(oldQuery.getNamedGraphURIs());
+		//		System.out.println(query);
 	}
 
-//	public Query getQuery(){
-//		return query;
-//	}
+	//	public Query getQuery(){
+	//		return query;
+	//	}
 
 	public boolean isAskQuery() {
 		return query.isAskType();
@@ -173,23 +173,23 @@ public class JenaQuery implements SparqlQuery {
 		final Set<Var> serviceVars = new HashSet<Var>();
 		final Set<Var> otherVars = new HashSet<Var>();
 		for(int i=0;i<os.size();i++){			
-		OpWalker.walk(os.get(i).getSubOp(),
-				// For each element...
-				new OpVisitorBase() {
-			// ...when it's a SERVICE block 
-			public void visit(OpBGP es){
-				Iterator<Triple> triples = es.getPattern().getList().iterator();
-				while (triples.hasNext()) {
-					Triple temp = triples.next();
-					if(temp.getObject() instanceof Var)
-						serviceVars.add((Var)temp.getObject());
-					if(temp.getSubject() instanceof Var)
-						serviceVars.add((Var)temp.getSubject());
-					if(temp.getPredicate() instanceof Var)
-						serviceVars.add((Var)temp.getPredicate());
+			OpWalker.walk(os.get(i).getSubOp(),
+					// For each element...
+					new OpVisitorBase() {
+				// ...when it's a SERVICE block 
+				public void visit(OpBGP es){
+					Iterator<Triple> triples = es.getPattern().getList().iterator();
+					while (triples.hasNext()) {
+						Triple temp = triples.next();
+						if(temp.getObject() instanceof Var)
+							serviceVars.add((Var)temp.getObject());
+						if(temp.getSubject() instanceof Var)
+							serviceVars.add((Var)temp.getSubject());
+						if(temp.getPredicate() instanceof Var)
+							serviceVars.add((Var)temp.getPredicate());
+					}
 				}
-			}
-		});	
+			});	
 		}
 		OpWalker.walk(reminderQueryWithOutService,
 				// For each element...
@@ -221,8 +221,8 @@ public class JenaQuery implements SparqlQuery {
 				}
 			}	
 		});			
-		
-		
+
+
 		Set<Var> intersection = new HashSet<Var>(serviceVars); // use the copy constructor
 		intersection.retainAll(otherVars);
 		serviceVars.removeAll(intersection);
@@ -250,7 +250,7 @@ public class JenaQuery implements SparqlQuery {
 		});
 		return varibales;
 	}
-	
+
 	public Set<Var> computeCacheKeyVars(){
 		final List<OpService> os = new ArrayList<OpService>();
 		//removes the SERVICES clauses from original query and put it in os
@@ -266,23 +266,23 @@ public class JenaQuery implements SparqlQuery {
 		final Set<Var> otherVars = new HashSet<Var>();
 		//filling serviceVars with variables in SERVICE clauses
 		for(int i=0;i<os.size();i++){
-		OpWalker.walk(os.get(i).getSubOp(),
-				// For each element...
-				new OpVisitorBase() {
-			// ...when it's a SERVICE block 
-			public void visit(OpBGP es){
-				Iterator<Triple> triples = es.getPattern().getList().iterator();
-				while (triples.hasNext()) {
-					Triple temp = triples.next();
-					if(temp.getObject() instanceof Var)
-						serviceVars.add((Var)temp.getObject());
-					if(temp.getSubject() instanceof Var)
-						serviceVars.add((Var)temp.getSubject());
-					if(temp.getPredicate() instanceof Var)
-						serviceVars.add((Var)temp.getPredicate());
+			OpWalker.walk(os.get(i).getSubOp(),
+					// For each element...
+					new OpVisitorBase() {
+				// ...when it's a SERVICE block 
+				public void visit(OpBGP es){
+					Iterator<Triple> triples = es.getPattern().getList().iterator();
+					while (triples.hasNext()) {
+						Triple temp = triples.next();
+						if(temp.getObject() instanceof Var)
+							serviceVars.add((Var)temp.getObject());
+						if(temp.getSubject() instanceof Var)
+							serviceVars.add((Var)temp.getSubject());
+						if(temp.getPredicate() instanceof Var)
+							serviceVars.add((Var)temp.getPredicate());
+					}
 				}
-			}
-		});	
+			});	
 		}
 		//filling otherVars with variables not in SERVICE clauses
 		OpWalker.walk(reminderQueryWithOutService,
@@ -319,8 +319,8 @@ public class JenaQuery implements SparqlQuery {
 		intersection.retainAll(otherVars);
 		return intersection;
 	}
-public int countServiceClauses() {
-		
+	public int countServiceClauses() {
+
 		final List<OpService> os = new ArrayList<OpService>();
 		//removes the SERVICES clauses from original query and put it in os
 		Transformer.transform(new TransformCopy(){

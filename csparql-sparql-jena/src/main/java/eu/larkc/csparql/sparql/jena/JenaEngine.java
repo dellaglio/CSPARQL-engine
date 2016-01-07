@@ -79,6 +79,7 @@ import com.hp.hpl.jena.sparql.engine.main.StageGenerator;
 import com.hp.hpl.jena.sparql.function.FunctionRegistry;
 import com.hp.hpl.jena.sparql.graph.GraphFactory;
 import com.hp.hpl.jena.sparql.modify.TemplateLib;
+import com.hp.hpl.jena.sparql.util.Context;
 import com.hp.hpl.jena.sparql.util.ModelUtils;
 import com.hp.hpl.jena.sparql.util.Symbol;
 import com.hp.hpl.jena.vocabulary.ReasonerVocabulary;
@@ -138,6 +139,9 @@ public class JenaEngine implements SparqlEngine {
 			QC.setFactory(ARQ.getContext(), new OpExecutorFactoryAcqua());
 		if(Config.INSTANCE.isJenaCacheUsingMaintenance())
 		{
+			/*ARQ.getContext().put(Symbol.create("acqua:tnow"), curTime);
+			ARQ.getContext().put(Symbol.create("acqua:width"), 100);
+			ARQ.getContext().put(Symbol.create("acqua:slide"), 10);*/
 			QC.setFactory(ARQ.getContext(), new OpExecutorFactoryAcqua());
 			// Get the standard one.
 			StageGenerator orig = (StageGenerator)ARQ.getContext().get(ARQ.stageGenerator) ;
@@ -203,7 +207,8 @@ public class JenaEngine implements SparqlEngine {
 			throw new RuntimeException("The query is not of the expected type");
 
 		JenaQuery query = (JenaQuery) q;
-
+		
+		
 		//TODO: what is it for?
 		//		for(String s: query.getGraphURIs()){
 		//			List<RDFTuple> list = jds.getNamedModel(s);
@@ -212,7 +217,7 @@ public class JenaEngine implements SparqlEngine {
 		//		}
 
 		QueryIterator root;
-
+		
 		if(reasonerMap.containsKey(query.getId())){
 			if(reasonerMap.get(query.getId()).isActive()){
 				Reasoner reasoner = (Reasoner) reasonerMap.get(query.getId()).getReasoner();
@@ -617,5 +622,13 @@ public class JenaEngine implements SparqlEngine {
 		}
 
 
+	}
+
+	@Override
+	public void setARQCurrentTime(String currentTimeWindowSlide) {
+		String[] args = currentTimeWindowSlide.split(" ");
+		ARQ.getContext().put(Symbol.create("acqua:tnow"), args[0]);
+		ARQ.getContext().put(Symbol.create("acqua:width"), args[1]);
+		ARQ.getContext().put(Symbol.create("acqua:slide"), args[2]);
 	}
 }

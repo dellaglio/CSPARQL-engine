@@ -71,4 +71,6 @@ public interface SparqlEngine {
 	void updateReasoner(String queryId, String rulesFile, ReasonerChainingType chainingType, String tBoxFile);
 
 	boolean getInferenceStatus();
+
+	void setARQCurrentTime(String string);
 }
