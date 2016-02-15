@@ -80,6 +80,13 @@ public final class Application {
 	   		+"SERVICE <http://localhost:3030/test/sparql> {?S ?P2 ?O2}"
 			+ "}";
 
+	   final String queryManySERVICE = "REGISTER QUERY PIPPO AS SELECT ?S ?P2 ?O2 FROM STREAM <http://myexample.org/stream> [RANGE TRIPLES 10] WHERE { ?S ?P ?O "
+		   		+"SERVICE <http://localhost:3030/test/sparql> {?S ?P2 ?O2}"
+		   		+"SERVICE <http://localhost:3030/test/sparql> {?S ?P2 ?O2}"
+		   		+"SERVICE <http://localhost:3030/test/sparql> {?S ?P2 ?O2}"				
+				+ "}";
+
+	   
 	   final String queryGetEverythingFromBothStream = "REGISTER QUERY PIPPO AS SELECT ?S ?P ?O FROM STREAM <http://www.glue.com/stream> [RANGE TRIPLES 1] FROM STREAM <http://myexample.org/stream> [RANGE TRIPLES 1] WHERE { ?S ?P ?O }";
 	   
 	   final String queryAnonymousNodes = "REGISTER QUERY PIPPO AS CONSTRUCT {                        [] <http://ex.org/by> ?s  ;  <http://ex.org/count> ?n . } FROM STREAM <http://www.larkc.eu/defaultRDFInputStream> [RANGE TRIPLES 10]                        WHERE {                                { SELECT ?s ?p (count(?o) as ?n)                                  WHERE { ?s ?p ?o }                                  GROUP BY ?s }                              }";

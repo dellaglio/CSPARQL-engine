@@ -60,17 +60,28 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 		List<Binding> result = new ArrayList<Binding>();
 		for (Binding curV : currentBindingsInWindow.keySet()) {
 			//int originalID = curV.originalVertex.getIntID();
-			if (isExpired(curV))
+			if (isExpired(curV)==1)
 				result.add(curV);
 
 		}
 		return result;
 	}
+	public List<Binding> getExpiredOrNotCachedWindowBindings() {
+		List<Binding> result = new ArrayList<Binding>();
+		for (Binding curV : currentBindingsInWindow.keySet()) {
+			//int originalID = curV.originalVertex.getIntID();
+			if (isExpired(curV)!=0)//either 1 (i.e., expired) or -1 (i.e., not cached)
+				result.add(curV);
+
+		}
+		return result;
+	}
+	
 	public List<Binding> getExpiredBindings(Collection<Binding> collection) {
 		List<Binding> result = new ArrayList<Binding>();
 		for (Binding curV : collection) {
 			//int originalID = curV.originalVertex.getIntID();
-			if (isExpired(curV))
+			if (isExpired(curV)==1)
 				result.add(curV);
 
 		}
@@ -79,15 +90,15 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 
 
 
-	protected boolean isExpired(Binding key) {
+	protected int isExpired(Binding key) {
 
 		try{long bbt = serviceCache.getCacheBBT().get(serviceCache.getKeyBinding(key));
-		if (bbt < tnow) {
-			return true;
+		if (bbt <= tnow) {
+			return 1;
 		} else {
-			return false;
+			return 0;//fresh
 		}
-		}catch(Exception e){logger.error("??????????????????"+serviceCache.getKeyBinding(key)); return false;}
+		}catch(Exception e){logger.error(key + " is not cached "+serviceCache.getKeyBinding(key)); return -1;}
 	}
 
 	private HashMap<Binding, Long> getCurrentBindingsInWindow(QueryIterator input) {
@@ -147,9 +158,7 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 			if (tempBsforUpdate.size() != tempResults.size()) {
 				throw new RuntimeException("querying results number is not equal to the results number in local");
 			}
-
 			//serviceCache.updateBBT(b, tnow);
-
 			serviceCache.put(serviceCache.getKeyBinding(b), tempResults,tnow);
 			totalTripleUpdatedInCache += tempResults.size();
 		}	
