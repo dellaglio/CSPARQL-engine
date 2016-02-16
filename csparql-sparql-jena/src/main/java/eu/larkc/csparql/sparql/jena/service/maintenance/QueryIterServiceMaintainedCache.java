@@ -4,19 +4,28 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.hp.hpl.jena.query.Query;
+import com.hp.hpl.jena.query.QueryExecutionFactory;
+import com.hp.hpl.jena.query.QueryFactory;
+import com.hp.hpl.jena.query.QuerySolution;
+import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.sparql.algebra.Op;
 import com.hp.hpl.jena.sparql.algebra.op.OpService;
+import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.engine.ExecutionContext;
 import com.hp.hpl.jena.sparql.engine.QueryIterator;
 import com.hp.hpl.jena.sparql.engine.binding.Binding;
 import com.hp.hpl.jena.sparql.engine.binding.BindingBase;
 import com.hp.hpl.jena.sparql.engine.binding.TimestampedBindingHashMap;
+import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
 import com.hp.hpl.jena.sparql.engine.http.Service;
 import com.hp.hpl.jena.sparql.engine.iterator.QueryIterCommonParent;
 import com.hp.hpl.jena.sparql.engine.iterator.QueryIterPlainWrapper;
@@ -142,6 +151,20 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 	}
 
 	public void executePolicy() {
+		Iterator<Binding> allCacheKeysIt= serviceCache.keys();
+		HashSet<Binding> A = new HashSet<Binding>();//fresh non-compatible cache subset
+		HashSet<Binding> B = new HashSet<Binding>();//stale non-compatible cache subset
+		while(allCacheKeysIt.hasNext()){
+			Binding cachedKey = allCacheKeysIt.next();
+			HashMap<Binding, Long> BbtOfServiceCache = serviceCache.getCacheBBT();
+			if(currentBindingsInWindow.get(cachedKey)==null){//non-compatible=cached entry is not in windows
+				if(BbtOfServiceCache.get(cachedKey)>tnow) //fresh non-compatible cache entry A
+					A.add(cachedKey);
+				else B.add(cachedKey);					
+			}
+		}
+		Iterator<Binding> staleNonCompatibleCacheEntryIt=B.iterator();
+		Iterator<Binding> freshNonCompatibleCacheEntryIt = A.iterator();
 		logger.debug(">>>>>>>>>>>>>>>>>>>currentBindingsInWindow "+currentBindingsInWindow);
 		electedList = this.mypolicy.updatePolicy(this, Config.INSTANCE.getBudget());
 		logger.debug("???????????????????elected List "+electedList);
@@ -149,22 +172,58 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 		Set<Binding> resultToUpdateInCache = new HashSet<Binding>();
 		int totalTripleUpdatedInCache = 0;
 
-
 		for (Binding b : electedList) {
 			//logger.debug("??????????????????????????????????????????????"+b);
 			Set<Binding> tempResults = MaintainKey(b);
+			
 			resultToUpdateInCache.addAll(tempResults);
 			Set<Binding> tempBsforUpdate = serviceCache.get(serviceCache.getKeyBinding(b));
 			if (tempBsforUpdate.size() != tempResults.size()) {
 				throw new RuntimeException("querying results number is not equal to the results number in local");
 			}
-			//serviceCache.updateBBT(b, tnow);
-			serviceCache.put(serviceCache.getKeyBinding(b), tempResults,tnow);
+			//serviceCache.updateBBT(b, tnow);	
+			Set<Binding> currentCachedValue = serviceCache.get(serviceCache.getKeyBinding(b));
+			if( currentCachedValue!=null){//maintain a compatible mapping in cache
+				/*if(currentCachedValue!=tempResults)
+					serviceCache.adaptChangeRate(serviceCache.getKeyBinding(b));*/	//this part is adaptive part to be investigated later			
+				serviceCache.put(serviceCache.getKeyBinding(b), tempResults,tnow);
+			}else{//replace a non-compatible mapping of cache with a new compatible mapping for a window mapping
+				Binding evictedKey=null;
+				if(staleNonCompatibleCacheEntryIt.hasNext())
+					evictedKey=staleNonCompatibleCacheEntryIt.next();
+				else if(freshNonCompatibleCacheEntryIt.hasNext())
+					evictedKey=freshNonCompatibleCacheEntryIt.next();
+				else logger.error("size of window is larger than size of cache!! no key to evict, incomplete response will be produced");
+				serviceCache.remove(evictedKey);
+				//the change rate of the new cache entry is max_value
+				int newCR=getCR(b);
+				serviceCache.put(serviceCache.getKeyBinding(b), tempResults,tnow,newCR);
+			}
 			totalTripleUpdatedInCache += tempResults.size();
 		}	
 
 	}
+	
 
+	private int getCR(Binding b) {
+		Binding k= serviceCache.getKeyBinding(b);
+		String query = "PREFIX omv: <http://omv.ontoware.org/2005/05/ontology#> " +
+				   "SELECT ?changeRate " +
+				   "WHERE { k.get(Var.alloc(serviceCache.getKeyVars().iterator().next().getVarName())) <http://example.org/changeRate> ?changeRate. " +
+				   "}";
+		Query jquery = QueryFactory.create(query) ;
+
+		 QueryEngineHTTP qexec = QueryExecutionFactory.createServiceRequest("http://sparql.bioontology.org/sparql", jquery);
+		 ResultSet results = qexec.execSelect() ;
+		 if(results.hasNext())
+		 {QuerySolution soln = results.nextSolution() ;
+		 Literal cr = soln.getLiteral("changeRate") ;
+		       return cr.getInt();
+		    }else
+		    	logger.error("no change rate for key "+k);
+		// TODO Auto-generated method stub
+		return 0;
+	}
 
 	private Set<Binding> MaintainKey(Binding outerBinding) {
 		//logger.debug("maintaining "+outerBinding);
@@ -177,9 +236,13 @@ public class QueryIterServiceMaintainedCache extends QueryIterRepeatApply {
 			values.add(serviceCache.getValueBinding(b));
 		}
 		return values;
+		
 	}
 	public Binding getkeyBinding(Binding b){
 		return serviceCache.getKeyBinding(b);
+	}
+	public boolean isCached(Binding b){
+		return serviceCache.contains(serviceCache.getKeyBinding(b));
 	}
 	protected QueryIterator getInput() {
 		return outerContentIterator;

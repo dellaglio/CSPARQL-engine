@@ -11,6 +11,7 @@ import org.junit.Test;
 
 import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.sparql.core.Var;
+import com.hp.hpl.jena.sparql.engine.binding.Binding;
 import com.hp.hpl.jena.sparql.engine.binding.BindingFactory;
 import com.hp.hpl.jena.sparql.engine.binding.BindingMap;
 
@@ -89,12 +90,20 @@ public class CacheAcquaTest {
 		
 	}
 	@Test public void shouldAddElements(){
-		BindingMap bm = BindingFactory.create();
+		BindingMap bm = BindingFactory.create();		
 		bm.add(Var.alloc("k1"), NodeFactory.createLiteral("a"));
 		bm.add(Var.alloc("k2"), NodeFactory.createLiteral("b"));
 		bm.add(Var.alloc("v1"), NodeFactory.createLiteral("c"));
 		bm.add(Var.alloc("v2"), NodeFactory.createLiteral("d") );
 		bm.add(Var.alloc("v3"), NodeFactory.createLiteral("e") );
+		/*********************************/
+		BindingMap bm2 = BindingFactory.create();
+		bm2.add(Var.alloc("k1"), NodeFactory.createLiteral("a1"));
+		bm2.add(Var.alloc("k2"), NodeFactory.createLiteral("b1"));
+		bm2.add(Var.alloc("v1"), NodeFactory.createLiteral("c"));
+		bm2.add(Var.alloc("v2"), NodeFactory.createLiteral("d") );
+		bm2.add(Var.alloc("v4"), NodeFactory.createLiteral("e") );
+		
 		
 		BindingMap bmKey = BindingFactory.create();
 		bmKey.add(Var.alloc("k1"), NodeFactory.createLiteral("a"));
@@ -111,9 +120,14 @@ public class CacheAcquaTest {
 				Var.alloc("v3")
 				));
 		
-		CacheAcqua cache = new CacheAcqua(10, keyVars, valueVars);
+		CacheAcqua cache = new CacheAcqua(1, keyVars, valueVars);
+		System.out.println("size "+cache.size());
 		assertEquals(false, cache.contains(bmKey));
-		cache.put(bm);
+		Set<Binding> putOutPut= cache.put(bm2);
+		System.out.println(">>>"+putOutPut);
+		putOutPut= cache.put(bm);
+		System.out.println(">>>>>"+putOutPut);
+		cache.printContent();
 		assertEquals(true, cache.contains(bmKey));
 }
 }

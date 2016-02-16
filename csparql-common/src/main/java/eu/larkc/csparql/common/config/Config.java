@@ -93,6 +93,10 @@ public class Config {
 		return config.getBoolean("jena.service.cache.enabled");
 	}
 	
+	public int adaptiveMaxCR() {
+		return config.getInt("jena.service.cache.adaptiveMaxCR");
+	}
+	
 	public boolean isJenaCacheUsingMaintenance() {
 		return config.getBoolean("jena.service.cache.maintenance.enabled");
 	}

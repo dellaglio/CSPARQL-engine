@@ -46,7 +46,7 @@ public class QueryRunner {
 	private Set<Var> keys;
 	private Set<Var> values;
 	private static Logger logger = LoggerFactory.getLogger(QueryRunner.class);
-	
+
 	public QueryRunner(String queryString, Model localData){		
 		query = QueryFactory.create(queryString);
 		model = localData;
@@ -64,87 +64,87 @@ public class QueryRunner {
 		this.keys=new HashSet<Var>();
 		this.values=new HashSet<Var>();
 		//common variables  among service and stream are key vars
-				final List<OpService> os = new ArrayList<OpService>();
-				//removes the SERVICES clauses from original query and put it in os
-				Op reminderQueryWithOutService = Transformer.transform(new TransformCopy(){
-					public Op transform(OpService opService, Op subOp){
-						os.add(opService);
-						return OpNull.create();
-					}
-				}, parsedQuery);
+		final List<OpService> os = new ArrayList<OpService>();
+		//removes the SERVICES clauses from original query and put it in os
+		Op reminderQueryWithOutService = Transformer.transform(new TransformCopy(){
+			public Op transform(OpService opService, Op subOp){
+				os.add(opService);
+				return OpNull.create();
+			}
+		}, parsedQuery);
 
-				final Set<Var> serviceVars = new HashSet<Var>();
-				final Set<Var> otherVars = new HashSet<Var>();
-				//filling serviceVars with variables in SERVICE clauses
-				for(int i=0;i<os.size();i++){
-					OpWalker.walk(os.get(i).getSubOp(),
-							// For each element...
-							new OpVisitorBase() {
-						// ...when it's a SERVICE block 
-						public void visit(OpBGP es){
-							Iterator<Triple> triples = es.getPattern().getList().iterator();
-							while (triples.hasNext()) {
-								Triple temp = triples.next();
-								if(temp.getObject() instanceof Var)
-									serviceVars.add((Var)temp.getObject());
-								if(temp.getSubject() instanceof Var)
-									serviceVars.add((Var)temp.getSubject());
-								if(temp.getPredicate() instanceof Var)
-									serviceVars.add((Var)temp.getPredicate());
-							}
-						}
-					});	
-				}
-				//System.out.println("reminderQueryWithOutService >>>> "+reminderQueryWithOutService);
-				//filling otherVars with variables not in SERVICE clauses
-				OpWalker.walk(reminderQueryWithOutService,
-						// For each element...
-						new OpVisitorBase() {
-					public void visit(OpJoin es){
-						//System.out.println("a service clause");
-						if(!es.getLeft().getClass().equals(OpNull.class)){
-							if(es.getLeft() instanceof OpBGP){
-							Iterator<Triple> it = ((OpBGP)es.getLeft()).getPattern().getList().iterator();
-							while (it.hasNext()) {
-								Triple temp = it.next();
-								if(temp.getObject() instanceof Var)
-									otherVars.add((Var)temp.getObject());
-								if(temp.getSubject() instanceof Var)
-									otherVars.add((Var)temp.getSubject());
-								if(temp.getPredicate() instanceof Var)
-									otherVars.add((Var)temp.getPredicate());
-							}}else visit(((OpJoin)es.getLeft()));
-						}if(!es.getRight().getClass().equals(OpNull.class)){
-							if(es.getRight() instanceof OpBGP){
-							Iterator<Triple> it = ((OpBGP)es.getRight()).getPattern().getList().iterator();
-							while (it.hasNext()) {
-								Triple temp = it.next();
-								if(temp.getObject() instanceof Var)
-									otherVars.add((Var)temp.getObject());
-								if(temp.getSubject() instanceof Var)
-									otherVars.add((Var)temp.getSubject());
-								if(temp.getPredicate() instanceof Var)
-									otherVars.add((Var)temp.getPredicate());
-							}
-							}else visit(((OpJoin)es.getRight()));
-						}
+		final Set<Var> serviceVars = new HashSet<Var>();
+		final Set<Var> otherVars = new HashSet<Var>();
+		//filling serviceVars with variables in SERVICE clauses
+		for(int i=0;i<os.size();i++){
+			OpWalker.walk(os.get(i).getSubOp(),
+					// For each element...
+					new OpVisitorBase() {
+				// ...when it's a SERVICE block 
+				public void visit(OpBGP es){
+					Iterator<Triple> triples = es.getPattern().getList().iterator();
+					while (triples.hasNext()) {
+						Triple temp = triples.next();
+						if(temp.getObject() instanceof Var)
+							serviceVars.add((Var)temp.getObject());
+						if(temp.getSubject() instanceof Var)
+							serviceVars.add((Var)temp.getSubject());
+						if(temp.getPredicate() instanceof Var)
+							serviceVars.add((Var)temp.getPredicate());
 					}
 				}
+			});	
+		}
+		//System.out.println("reminderQueryWithOutService >>>> "+reminderQueryWithOutService);
+		//filling otherVars with variables not in SERVICE clauses
+		OpWalker.walk(reminderQueryWithOutService,
+				// For each element...
+				new OpVisitorBase() {
+			public void visit(OpJoin es){
+				//System.out.println("a service clause");
+				if(!es.getLeft().getClass().equals(OpNull.class)){
+					if(es.getLeft() instanceof OpBGP){
+						Iterator<Triple> it = ((OpBGP)es.getLeft()).getPattern().getList().iterator();
+						while (it.hasNext()) {
+							Triple temp = it.next();
+							if(temp.getObject() instanceof Var)
+								otherVars.add((Var)temp.getObject());
+							if(temp.getSubject() instanceof Var)
+								otherVars.add((Var)temp.getSubject());
+							if(temp.getPredicate() instanceof Var)
+								otherVars.add((Var)temp.getPredicate());
+						}}else visit(((OpJoin)es.getLeft()));
+				}if(!es.getRight().getClass().equals(OpNull.class)){
+					if(es.getRight() instanceof OpBGP){
+						Iterator<Triple> it = ((OpBGP)es.getRight()).getPattern().getList().iterator();
+						while (it.hasNext()) {
+							Triple temp = it.next();
+							if(temp.getObject() instanceof Var)
+								otherVars.add((Var)temp.getObject());
+							if(temp.getSubject() instanceof Var)
+								otherVars.add((Var)temp.getSubject());
+							if(temp.getPredicate() instanceof Var)
+								otherVars.add((Var)temp.getPredicate());
+						}
+					}else visit(((OpJoin)es.getRight()));
+				}
+			}
+		}
 				);						
-				Set<Var> intersection = new HashSet<Var>(serviceVars); // use the copy constructor
-				intersection.retainAll(otherVars);
-				this.keys.addAll(intersection);
-				logger.debug("____________keys vars of query "+keys);
-				serviceVars.removeAll(intersection);
-				this.values.addAll(serviceVars);	
-				logger.debug("___________value vars of query "+values);
-				
+		Set<Var> intersection = new HashSet<Var>(serviceVars); // use the copy constructor
+		intersection.retainAll(otherVars);
+		this.keys.addAll(intersection);
+		logger.debug("____________keys vars of query "+keys);
+		serviceVars.removeAll(intersection);
+		this.values.addAll(serviceVars);	
+		logger.debug("___________value vars of query "+values);
+
 	}
 
 	public Query getQuery(){
 		return query;
 	}
-	
+
 	public Set<Var> computeCacheValueVars(){
 		return this.values;
 	}
@@ -153,7 +153,7 @@ public class QueryRunner {
 		return this.keys;
 	}
 
-	
+
 	public int extractServiceClauses() {
 		serviceList=new ArrayList<>();
 		//removes the SERVICES clauses from original query and put it in os

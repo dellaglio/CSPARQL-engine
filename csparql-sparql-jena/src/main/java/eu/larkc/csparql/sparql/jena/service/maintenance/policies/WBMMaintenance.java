@@ -25,9 +25,26 @@ public class WBMMaintenance implements MaintenancePolicy {
 			long lastTime = currentWindowBindingsTS.get(e);			
 			// for each fund calculate the score
 			lastTime += qi.getWindowLength()*1000;
-			int changeRate = cacheChangeRates.get(qi.getkeyBinding(e));
+			/*int changeRate = cacheChangeRates.get(qi.getkeyBinding(e));
 			//computing V and L
-			UpdateEvent tempEvent = UpdateEvent.planOneUpdateEvent(e, changeRate, lastTime, qi.getTnow(),qi.getBBT(qi.getkeyBinding(e)));
+			UpdateEvent tempEvent = UpdateEvent.planOneUpdateEvent(e, changeRate, lastTime, qi.getTnow(),qi.getBBT(qi.getkeyBinding(e)));*/
+			int changeRate;
+			UpdateEvent tempEvent=null;
+			if(qi.isCached(e))
+				{
+				changeRate = cacheChangeRates.get(qi.getkeyBinding(e));
+				//computing V and L
+				tempEvent = UpdateEvent.planOneUpdateEvent(e, changeRate, lastTime, 
+						qi.getTnow(),qi.getBBT(qi.getkeyBinding(e)));
+			}else{
+				logger.warn("there is no change rate and bbt for the window binding => window binding has no compatible mapping in cache and cache is restrcited");
+				logger.warn("random change rate is assigned and bbt is the current time to specify the window mapping is stale and include them in the elecyed lists");
+				changeRate=Integer.MAX_VALUE;				
+				//computing V and L
+				tempEvent = UpdateEvent.planOneUpdateEvent(e, changeRate, lastTime, 
+						qi.getTnow(),qi.getTnow());
+			}
+			
 			//add the update event to the sorted list
 			results.add(tempEvent);
 			//logger.debug("tempEvent:" + tempEvent + " scores " + tempEvent.fundToScore + " originalScore " + tempEvent.scoreForUpdate);

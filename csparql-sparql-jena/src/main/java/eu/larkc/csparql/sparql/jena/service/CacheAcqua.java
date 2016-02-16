@@ -35,6 +35,8 @@ import com.hp.hpl.jena.sparql.engine.binding.BindingMap;
 import com.hp.hpl.jena.sparql.engine.binding.BindingProjectNamed;
 import com.hp.hpl.jena.sparql.engine.binding.BindingUtils;
 
+import eu.larkc.csparql.common.config.Config;
+
 
 //possible K: Binding, long
 //possible V: Binding, Set<Binding>, List<Binding>, ???
@@ -158,7 +160,25 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 		updateBBT.put(key,((tnow / cr)+1) * cr);	
 		return super.put(key, value);
 	}
-
+	public Set<Binding> put(Binding key, Set<Binding> value, long tnow, int changeRate) {//add a non-exisitng cache entry-> BBT and change rate and everything initialized
+		lastUpdateTimeOfKey.put(key, System.currentTimeMillis());
+				//maintaining the cached values bbt should be updated
+				cacheChangeRate.put(key,changeRate);
+				updateBBT.put(key,((tnow / changeRate)+1) * changeRate);	
+				return super.put(key, value);
+		
+	}
+	@Override
+	public boolean remove(Binding r) {
+		if (super.remove(r)) {
+			updateBBT.remove(r);
+			cacheChangeRate.remove(r);
+			lastUpdateTimeOfKey.remove(r);
+			return true;
+		} else
+			return false;
+	}
+	
 	public Set<Binding> put(Binding key, Binding value){
 		//logger.debug("????????????????????????????????????????????????filling the cache with "+key+"????????"+ value);
 		lastUpdateTimeOfKey.put(key, System.currentTimeMillis());
@@ -289,6 +309,20 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 
 		return cacheChangeRate;
 	}
+
+	public void adaptChangeRate(Binding keyBinding) {
+		int prevcr = cacheChangeRate.get(keyBinding);
+		if (prevcr == 1) {
+			prevcr = Config.INSTANCE.adaptiveMaxCR() + 1;
+		}
+		if (prevcr > Config.INSTANCE.adaptiveMaxCR())
+			cacheChangeRate.put(keyBinding, prevcr++);
+		else
+			cacheChangeRate.put(keyBinding, prevcr--);
+
+	}
+
+	
 
 
 }
