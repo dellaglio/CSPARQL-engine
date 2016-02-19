@@ -16,15 +16,19 @@ public class UpdateEvent {
 	//public int IDToUpdateInBKG;
 	public Binding BKGBindingToUpdate;
 	public int changeRate;
-	public long expiredEvalutionTime;
+	//public long expiredEvalutionTime;
 	public long creatTime; // not sure if useful
 	public int remainingEva;
 	public int scoreForUpdate;
-	public long scheduledUpdateTime;
+	private long scheduledUpdateTime;
 
-	public int calculateScore(int changeRate, long currentTempEvluationTime, int remainingEva) {
-		long tempExpirationTimeAfterScheduledTime = this.scheduledUpdateTime + changeRate - currentTempEvluationTime;
-		int validSlideAfterScheduledTime = (int) Math.ceil((double) tempExpirationTimeAfterScheduledTime
+	public int calculateScore(int changeRate, long currentTime, int remainingEva) {
+		long tempExpirationTimeAfterScheduledTime = this.scheduledUpdateTime + changeRate - currentTime;
+		logger.debug("this.scheduledUpdateTime"+this.scheduledUpdateTime);
+		logger.debug("changeRate "+ changeRate);
+		logger.debug("currentTime "+currentTime);
+		logger.debug("QueryIterServiceMaintainedCache.getSlideLength() * 1000L "+ QueryIterServiceMaintainedCache.getSlideLength() * 1000L) ;
+		int validSlideAfterScheduledTime = (int) Math.floor((double) tempExpirationTimeAfterScheduledTime
 				/ (double) (QueryIterServiceMaintainedCache.getSlideLength() * 1000L));
 		logger.debug("V= "+validSlideAfterScheduledTime);
 		int score = Math.min(validSlideAfterScheduledTime, remainingEva);
@@ -32,20 +36,23 @@ public class UpdateEvent {
 		return score;
 	}
 
-	public UpdateEvent(Binding id, int changeRate, long currentTempEvluationTime, int remainingEva, long currentTime,long bbt) {
+	public UpdateEvent(Binding id, int changeRate, long currentTime, int remainingEva,long bbt) {
 		this.BKGBindingToUpdate = id;
 		this.creatTime = currentTime;
 		this.changeRate = changeRate;
 		// the evaluation time it needs update
-		this.expiredEvalutionTime = currentTempEvluationTime;
+		//this.expiredEvalutionTime = currentTempEvluationTime;
 		this.remainingEva = remainingEva;
 		double times = Math.ceil((double) (currentTime - bbt) / (double) changeRate);
+		//if((currentTime - bbt) % changeRate ==0) times ++;
+		logger.debug("times "+ times);
 		long newbbt = bbt + changeRate * (long) times;
-		newbbt -= changeRate;
+		//if(newbbt>bbt) newbbt -= changeRate;
 		// change to use bbt
 		// time is still valid range is [)
 		this.scheduledUpdateTime = newbbt;
-		this.scoreForUpdate = this.calculateScore(changeRate, currentTempEvluationTime, remainingEva);
+		logger.debug("bbt "+ bbt);			
+		this.scoreForUpdate = this.calculateScore(changeRate, currentTime, remainingEva);
 	}
 
 	public static UpdateEvent planOneUpdateEvent(Binding originalID, 
@@ -53,7 +60,7 @@ public class UpdateEvent {
 		long timeInFrontOfTheStock = leavingWindowTime - evaluationTime;
 		int evaInFrontOfTheStock = (int) Math.ceil((double) timeInFrontOfTheStock / (double) (QueryIterServiceMaintainedCache.getSlideLength() * 1000L));
 		logger.debug(originalID+ "L= "+evaInFrontOfTheStock);
-		UpdateEvent tempEvent = new UpdateEvent(originalID, changeRate, evaluationTime, evaInFrontOfTheStock, evaluationTime,bbt);
+		UpdateEvent tempEvent = new UpdateEvent(originalID, changeRate, evaluationTime, evaInFrontOfTheStock,bbt);
 		// score can be 0, since a data can leave the window before it expires
 		// if (tempEvent.scoreForUpdate == 0 && evaluationTime !=
 		// Config.INSTANCE.getQueryWindowWidth())
@@ -63,11 +70,11 @@ public class UpdateEvent {
 
 	@Override
 	public String toString() {
-		return expiredEvalutionTime + " " + BKGBindingToUpdate + " " + scoreForUpdate;
+		return  BKGBindingToUpdate + " " + scoreForUpdate;
 	}
 
 	public String toFullString() {
-		return BKGBindingToUpdate + " " + expiredEvalutionTime + " " + remainingEva + " " + scoreForUpdate;
+		return BKGBindingToUpdate + " " + remainingEva + " " + scoreForUpdate;
 	}
 
 	public static class Comparators {

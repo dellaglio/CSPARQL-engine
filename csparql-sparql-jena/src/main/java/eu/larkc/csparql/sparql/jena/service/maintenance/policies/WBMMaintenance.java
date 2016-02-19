@@ -2,6 +2,7 @@ package eu.larkc.csparql.sparql.jena.service.maintenance.policies;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -21,7 +22,8 @@ public class WBMMaintenance implements MaintenancePolicy {
 		TreeSet<UpdateEvent> results = new TreeSet<UpdateEvent>(UpdateEvent.Comparators.SCORE);
 		HashMap<Binding,Long> currentWindowBindingsTS= qi.getCurrentBindingOfWindow();
 		HashMap<Binding,Integer> cacheChangeRates=qi.getChangeRate();
-		for (Binding e : qi.getExpiredWindowBindings()) {
+		//for (Binding e : qi.getExpiredWindowBindings()) {
+		for (Binding e : qi.getExpiredOrNotCachedWindowBindings()) {
 			long lastTime = currentWindowBindingsTS.get(e);			
 			// for each fund calculate the score
 			lastTime += qi.getWindowLength()*1000;
@@ -32,6 +34,9 @@ public class WBMMaintenance implements MaintenancePolicy {
 			UpdateEvent tempEvent=null;
 			if(qi.isCached(e))
 				{
+				logger.debug("an stale entry of cache: current time "+ qi.getTnow()+ " bbt: "+ qi.getBBT(qi.getkeyBinding(e)) + " key "+ e);
+				
+				//logger.debug(e+" is cached");
 				changeRate = cacheChangeRates.get(qi.getkeyBinding(e));
 				//computing V and L
 				tempEvent = UpdateEvent.planOneUpdateEvent(e, changeRate, lastTime, 
@@ -39,7 +44,7 @@ public class WBMMaintenance implements MaintenancePolicy {
 			}else{
 				logger.warn("there is no change rate and bbt for the window binding => window binding has no compatible mapping in cache and cache is restrcited");
 				logger.warn("random change rate is assigned and bbt is the current time to specify the window mapping is stale and include them in the elecyed lists");
-				changeRate=Integer.MAX_VALUE;				
+				changeRate=new Random().nextInt(qi.maxChangeRate())	;			
 				//computing V and L
 				tempEvent = UpdateEvent.planOneUpdateEvent(e, changeRate, lastTime, 
 						qi.getTnow(),qi.getTnow());
@@ -72,11 +77,8 @@ public class WBMMaintenance implements MaintenancePolicy {
 				UpdateEvent tempEvent = plannedExpriedUpdate.pollLast();
 				electedElements.add(tempEvent.BKGBindingToUpdate);
 				tempBudget--;
-			}
-			
+			}			
 			return electedElements;
-
-	
 		}
 		return null;
 	}

@@ -110,7 +110,8 @@ public class Config {
 	}
 	
 	public int getJenaServiceCachingSize() {
-		return config.getInt("jena.service.cache.size");
+		return 5;
+		//return config.getInt("jena.service.cache.size");
 	}
 	
 	public boolean isTimestampFunctionEnabled() {

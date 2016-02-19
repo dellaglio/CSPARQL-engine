@@ -190,33 +190,40 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 	 * this put function is called by opServiceCache at the query registeration time 
 	 * 
 	 */
-	public Set<Binding> put(Binding b){
+	public Set<Binding> put(Binding b, long tnow){
 		//logger.debug("????????????????????????????????????????????????filling the cache with "+b);
 		Binding keyBm = getKeyBinding(b);
 		lastUpdateTimeOfKey.put(keyBm, System.currentTimeMillis());
 		Binding valueBm = getValueBinding(b);
 
-		if(b.get(Var.alloc("x"))!=null)//this if is always true --> filling cache for the first time with changerate value
+		if(b.get(Var.alloc("x"))!=null)//this if is always false --> except filling cache for the first time with changerate value
 		{
 			cacheChangeRate.put(keyBm, Integer.parseInt(b.get(Var.alloc("x")).getLiteralValue().toString()));	
-			updateBBT.put(keyBm, Long.MIN_VALUE);//all elements are expired at the begining
+			updateBBT.put(keyBm, 0L);//all elements are expired at the begining
 			//updateBBT.put(keyBm, Long.MAX_VALUE);//all elements are fresh at the begining
 		}
 
+		lastUpdateTimeOfKey.put(keyBm, tnow);
+		//maintaining the cached values bbt should be updated
+		long cr=cacheChangeRate.get(keyBm);
+		updateBBT.put(keyBm,((tnow / cr)+1) * cr);
+		
 		Set<Binding> prevBinding=super.get(keyBm);
-		if(prevBinding!=null){
+		/*if(prevBinding!=null){
 			prevBinding.add(valueBm);
 			//logger.debug("????????????????????????????????????????????????filling the cache with "+keyBm+"????????"+ prevBinding);
 			return super.put(keyBm, prevBinding);
-		}else{
+		}else{*/
 			HashSet<Binding> bhs=new HashSet<>();
 			bhs.add(valueBm);
 			//logger.debug("????????????????????????????????????????????????filling the cache with "+keyBm+"????????"+ bhs);
 			return super.put(keyBm, bhs);
-		}		
+		//}		
 
 	}
 
+	
+	
 	/*
 	 * get top k for LRU maintenance of the whole cache
 	 */	
@@ -239,12 +246,15 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 	}
 	public void printContent(){
 		System.out.println("START PRINTING CACHE CONTENT");
-		Iterator<Binding> it = super.keys();
-		while(it.hasNext()){
-			Binding temp = it.next();
-			System.out.println(temp+" "+super.get(temp));
-		}
-		System.out.println("END PRINTING CACHE CONTENT");
+
+			final Iterator<Binding> it = super.keys();
+
+			while(it.hasNext()){
+				Binding temp = it.next();
+				
+				System.out.println(temp+" change rate: "+cacheChangeRate.get(temp)+" bbt: "+updateBBT.get(temp));
+			}
+			System.out.println("END PRINTING CACHE CONTENT");
 
 	}
 
@@ -321,6 +331,19 @@ public class CacheAcqua extends CacheLRU<Binding,Set<Binding>> {
 			cacheChangeRate.put(keyBinding, prevcr--);
 
 	}
+
+	public int getMaxChangeRate() {
+		int max=0;
+		Iterator<Integer> crit=cacheChangeRate.values().iterator();
+		while(crit.hasNext()){
+			int ncr = crit.next();
+			if(max<ncr)
+				max=ncr;
+		}
+		return max;
+	}
+
+	
 
 	
 
